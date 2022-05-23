@@ -170,7 +170,7 @@ def main():
 
     # Set optimizer
     optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
@@ -312,9 +312,9 @@ def main():
 
             # Set optimizer
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
-                                   {'params': net.branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
             for b in range(net.get_ensemble_size() - 1):
-                optimizer.add_param_group({'params': net.branches[b].parameters(), 'lr': 0.01, 'momentum': 0.9})
+                optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01, 'momentum': 0.9})
 
         # Finish training after training all branches
         else:
