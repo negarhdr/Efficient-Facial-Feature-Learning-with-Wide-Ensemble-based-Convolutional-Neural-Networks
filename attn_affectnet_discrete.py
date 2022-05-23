@@ -31,7 +31,7 @@ from os import path, makedirs
 # Modules
 from model.utils import udata, umath
 from model.ml.esr_5 import ESR
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_process="cpu", current_branch_on_training_val=0):
