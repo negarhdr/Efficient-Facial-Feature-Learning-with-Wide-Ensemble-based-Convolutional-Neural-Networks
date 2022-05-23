@@ -160,7 +160,7 @@ def main():
     print("Running on {}".format(device))
 
     # Initialize network
-    net = ESR()
+    net = ESR(device)
 
     # Add first branch
     net.add_branch()
@@ -226,7 +226,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, heads, attn_out = net(inputs)
+                emotions, affect_values, heads = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
