@@ -32,6 +32,7 @@ import copy
 
 # Modules
 from model.utils import udata, umath
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 
 class Base(nn.Module):
