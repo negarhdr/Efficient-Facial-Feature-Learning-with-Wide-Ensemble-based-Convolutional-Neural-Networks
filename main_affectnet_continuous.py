@@ -305,7 +305,7 @@ def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Continuous/"
     name_experiment = "ESR_9-AffectNet_Continuous_debug_2epochs"
-    base_path_to_dataset = "../FER_data/AffectNet"
+    base_path_to_dataset = "../../FER_data/AffectNet"
     num_branches_trained_network = 9
     validation_interval = 1
     max_training_epoch = 2  # it was 2
