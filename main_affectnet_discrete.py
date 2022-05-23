@@ -25,14 +25,14 @@ import torch.nn as nn
 from PIL import Image
 import numpy as np
 import torch
-
-# Standard Libraries
 from os import path, makedirs
 import copy
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Modules
 from model.utils import udata, umath
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 
 
 class Base(nn.Module):
