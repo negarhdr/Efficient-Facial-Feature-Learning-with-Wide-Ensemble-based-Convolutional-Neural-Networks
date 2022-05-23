@@ -197,7 +197,7 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
 
         attn_head = self.cross_attn(x_conv_branch)  # attention head output
-        print('attn_head size', attn_head.shape)
+        # print('attn_head size', attn_head.shape) # batchsize x 512
 
         # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
         x_conv_branch = self.global_pool(x_conv_branch)
