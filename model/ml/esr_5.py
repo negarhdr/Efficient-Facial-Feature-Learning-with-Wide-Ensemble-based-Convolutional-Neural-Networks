@@ -197,6 +197,7 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
 
         attn_head = self.cross_attn(x_conv_branch)  # attention head output
+        print('attn_head', attn_head)
         # print('attn_head size', attn_head.shape) # batchsize x 512
 
         # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
@@ -329,7 +330,7 @@ class ESR(nn.Module):
             emotions.append(output_emotion)
             affect_values.append(output_affect)
             attn_heads.append(attention_head)
-        print('attn_heads', attn_heads)
+        # print('attn_heads', attn_heads)
         heads = torch.stack(attn_heads).permute([1, 0, 2])
         if heads.size(1) > 1:
             heads = F.log_softmax(heads, dim=1)
