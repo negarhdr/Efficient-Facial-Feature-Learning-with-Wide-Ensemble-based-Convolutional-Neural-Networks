@@ -138,13 +138,13 @@ class FeatureDiversity(nn.Module):
         super(FeatureDiversity, self).__init__()
 
     def forward(self, x):
-        print('heads shape', x.shape)
         num_features = x.size(2)
         diff = 0
         for i in range(num_features):
             for j in range(num_features):
                 diff += torch.square(x[:, :, i] - x[:, :, j])
         diff = 1/(2*num_features*(num_features-1)) * diff
+        diff = torch.sum(diff, 1)
         print('diff shape', diff.shape)
         div = diff.mean()
         #print('div', div)
