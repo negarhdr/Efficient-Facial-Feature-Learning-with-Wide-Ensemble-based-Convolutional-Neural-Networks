@@ -40,7 +40,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _, _ = val_model_eval(inputs_eval)
+        outputs_eval, _, _, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -132,12 +132,28 @@ class PartitionLoss(nn.Module):
         return loss
 
 
+class FeatureDiversity(nn.Module):
+    def __init__(self, ):
+        super(FeatureDiversity, self).__init__()
+
+    def forward(self, x):
+        num_head = x.size(1)
+
+        if num_head > 1:
+            var = x.var(dim=1).mean()
+            loss = torch.log(1 + num_head / (var + 1e-10))
+        else:
+            loss = 0
+
+        return loss
+
+
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/"
     name_experiment = "ESR_9-AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
-    num_branches_trained_network = 5
+    num_branches_trained_network = 9
     validation_interval = 1
     max_training_epoch = 50
 
@@ -175,6 +191,7 @@ def main():
     # Define criterion
     criterion = nn.CrossEntropyLoss()
     attn_criterion = PartitionLoss()
+    diversity = FeatureDiversity()
 
     # Load validation set
     # max_loaded_images_per_label=100000 loads the whole validation set
@@ -226,7 +243,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, heads = net(inputs)
+                emotions, affect_values, heads, attn_out = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -237,6 +254,7 @@ def main():
                     loss += criterion(emotions[i_4], labels)
 
                 loss += attn_criterion(heads)
+                # add diversity here (or merge diversity somehow in loss function)
 
                 # Backward
                 loss.backward()
