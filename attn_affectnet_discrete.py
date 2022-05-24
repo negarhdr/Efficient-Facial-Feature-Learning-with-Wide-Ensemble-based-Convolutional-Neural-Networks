@@ -122,7 +122,7 @@ class PartitionLoss(nn.Module):
 
     def forward(self, x):
         num_head = x.size(1)
-        print('num_head size', x.size())
+        # print('num_head size', x.size())  # batch_size * num_branches * 512
 
         if num_head > 1:
             var = x.var(dim=1).mean()
@@ -133,20 +133,18 @@ class PartitionLoss(nn.Module):
         return loss
 
 
-'''class FeatureDiversity(nn.Module):
+class FeatureDiversity(nn.Module):
     def __init__(self, ):
         super(FeatureDiversity, self).__init__()
 
     def forward(self, x):
-        num_head = x.size(1)
-
-        if num_head > 1:
-            var = x.var(dim=1).mean()
-            loss = torch.log(1 + num_head / (var + 1e-10))
-        else:
-            loss = 0
-
-        return loss'''
+        num_features = x.size(1)
+        for i in range(num_features):
+            for j in range(num_features):
+                diff = torch.square(x[:, i] - x[:, j])
+        diff = 1/(2*num_features*(num_features-1)) * diff
+        div = diff.mean()
+        return div
 
 
 def main():
@@ -192,7 +190,7 @@ def main():
     # Define criterion
     criterion = nn.CrossEntropyLoss()
     attn_criterion = PartitionLoss()
-    # diversity = FeatureDiversity()
+    diversity = FeatureDiversity()
 
     # Load validation set
     # max_loaded_images_per_label=100000 loads the whole validation set
@@ -244,7 +242,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, heads, attn_out = net(inputs)
+                emotions, affect_values, heads, attn_emotions = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -254,8 +252,8 @@ def main():
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
 
-                loss += attn_criterion(heads)
-                # add diversity here (or merge diversity somehow in loss function)
+                loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
+                loss += diversity(attn_emotions)  # diversity between different channels of attention
 
                 # Backward
                 loss.backward()

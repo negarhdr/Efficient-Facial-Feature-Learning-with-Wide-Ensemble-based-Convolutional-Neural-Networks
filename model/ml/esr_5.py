@@ -200,11 +200,11 @@ class ConvolutionalBranch(nn.Module):
         # print('attn_head size', attn_head.shape) # batchsize x 512
 
         # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
-        x_conv_branch = self.global_pool(x_conv_branch)
-        x_conv_branch = x_conv_branch.view(-1, 512)
+        # x_conv_branch = self.global_pool(x_conv_branch)
+        # x_conv_branch = x_conv_branch.view(-1, 512)
 
         # Fully connected layer for emotion perception
-        discrete_emotion = self.fc(x_conv_branch)
+        discrete_emotion = self.fc(attn_head)
 
         # Application of the ReLU function to neurons related to discrete emotion labels
         x_conv_branch = F.relu(discrete_emotion)
@@ -335,8 +335,8 @@ class ESR(nn.Module):
         if heads.size(1) > 1:
             heads = F.log_softmax(heads, dim=1)
 
-        attn_out = self.attn_fc(heads.sum(dim=1))  # or we can remove the sum and in branch, apply log_softmax and then fc to produce sth with the same size of emotion/dimension outputs
-        attn_out = self.attn_bn(attn_out)
+        attn_emotion = self.attn_fc(heads.sum(dim=1))  # or we can remove the sum and in branch, apply log_softmax and then fc to produce sth with the same size of emotion/dimension outputs
+        attn_out = self.attn_bn(attn_emotion)
 
-        return emotions, affect_values, heads, attn_out
+        return emotions, affect_values, heads, attn_emotion
 
