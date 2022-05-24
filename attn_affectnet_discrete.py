@@ -126,10 +126,10 @@ class PartitionLoss(nn.Module):
 
         if num_head > 1:
             var = x.var(dim=1).mean()
+            print('var_shape', var.shape)
             loss = torch.log(1 + num_head / (var + 1e-10))
         else:
             loss = 0
-        print('loss_shape', loss.shape)
         return loss
 
 
