@@ -137,7 +137,7 @@ class FeatureDiversity(nn.Module):
     def __init__(self, ):
         super(FeatureDiversity, self).__init__()
 
-    def forward(self, x):
+    def forward(self, x):  # batch_size x num_branch x 512
         num_features = x.size(2)
         diff = 0
         for i in range(num_features):
@@ -148,6 +148,7 @@ class FeatureDiversity(nn.Module):
         div = diff.mean()
         return div
 
+# todo: diversity across branches
 
 def main():
     # Experimental variables
