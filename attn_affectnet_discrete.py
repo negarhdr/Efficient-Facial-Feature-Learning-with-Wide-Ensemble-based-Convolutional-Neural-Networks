@@ -139,11 +139,13 @@ class FeatureDiversity(nn.Module):
 
     def forward(self, x):
         num_features = x.size(1)
+        print('num_features', num_features)
         for i in range(num_features):
             for j in range(num_features):
                 diff = torch.square(x[:, i] - x[:, j])
         diff = 1/(2*num_features*(num_features-1)) * diff
         div = diff.mean()
+        print('div', div)
         return div
 
 
