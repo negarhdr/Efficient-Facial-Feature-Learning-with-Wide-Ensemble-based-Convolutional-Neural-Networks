@@ -329,7 +329,7 @@ class ESR(nn.Module):
             emotions.append(output_emotion)
             affect_values.append(output_affect)
             attn_heads.append(attention_head)
-
+        print('attn_heads', attn_heads)
         heads = torch.stack(attn_heads).permute([1, 0, 2])
         if heads.size(1) > 1:
             heads = F.log_softmax(heads, dim=1)
