@@ -105,11 +105,12 @@ class ChannelAttention(nn.Module):
         )
 
     def forward(self, sa):
+        print('sa', sa)
         sa = self.gap(sa)
         sa = sa.view(sa.size(0), -1)
         y = self.attention(sa)
         out = sa * y
-
+        print('ca', ca)
         return out
 
 
@@ -197,7 +198,7 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
 
         attn_head = self.cross_attn(x_conv_branch)  # attention head output
-        print('attn_head', attn_head)
+        # print('attn_head', attn_head)
         # print('attn_head size', attn_head.shape) # batchsize x 512
 
         # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
