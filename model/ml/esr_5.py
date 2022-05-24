@@ -335,8 +335,8 @@ class ESR(nn.Module):
         if heads.size(1) > 1:
             heads = F.log_softmax(heads, dim=1)
 
-        # attn_out = self.attn_fc(heads.sum(dim=1))  # or we can remove the sum and in branch, apply log_softmax and then fc to produce sth with the same size of emotion/dimension outputs
-        # attn_out = self.attn_bn(attn_out)
+        attn_out = self.attn_fc(heads.sum(dim=1))  # or we can remove the sum and in branch, apply log_softmax and then fc to produce sth with the same size of emotion/dimension outputs
+        attn_out = self.attn_bn(attn_out)
 
         return emotions, affect_values, heads, attn_out
 
