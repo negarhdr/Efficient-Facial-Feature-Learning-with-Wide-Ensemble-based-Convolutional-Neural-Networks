@@ -255,7 +255,7 @@ def main():
                     loss += criterion(emotions[i_4], labels)
 
                 loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
-                loss += diversity(heads)  # diversity between different channels of attention
+                #loss += diversity(heads)  # diversity between different channels of attention
                 print('loss', loss)
 
                 # Backward
