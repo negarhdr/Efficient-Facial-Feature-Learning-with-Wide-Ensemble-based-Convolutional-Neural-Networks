@@ -146,7 +146,6 @@ class FeatureDiversity(nn.Module):
         diff = 1/(2*num_features*(num_features-1)) * diff
         diff = torch.sum(diff, 1)
         div = diff.mean()
-        print(div)
         return div
 
 
