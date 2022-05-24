@@ -126,7 +126,7 @@ class PartitionLoss(nn.Module):
 
         if num_head > 1:
             var = x.var(dim=1).mean()
-            print('var_shape', var.shape)
+            # print('var_shape', var.shape)
             loss = torch.log(1 + num_head / (var + 1e-10))
         else:
             loss = 0
@@ -138,12 +138,13 @@ class FeatureDiversity(nn.Module):
         super(FeatureDiversity, self).__init__()
 
     def forward(self, x):
+        print('heads shape', x.shape)
         num_features = x.size(1)
         diff = 0
         for i in range(num_features):
             for j in range(num_features):
                 diff += torch.square(x[:, i] - x[:, j])
-                print('square', x[:, i] )
+                # print('square', x[:, j])
         diff = 1/(2*num_features*(num_features-1)) * diff
         div = diff.mean()
         #print('div', div)
@@ -256,7 +257,7 @@ def main():
                     loss += criterion(emotions[i_4], labels)
 
                 loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
-                loss += diversity(attn_emotions)  # diversity between different channels of attention
+                loss += diversity(heads)  # diversity between different channels of attention
 
                 # Backward
                 loss.backward()
