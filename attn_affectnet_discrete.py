@@ -129,7 +129,7 @@ class PartitionLoss(nn.Module):
             loss = torch.log(1 + num_head / (var + 1e-10))
         else:
             loss = 0
-
+        print('loss_shape', loss.shape)
         return loss
 
 
@@ -139,10 +139,11 @@ class FeatureDiversity(nn.Module):
 
     def forward(self, x):
         num_features = x.size(1)
+        diff = 0
         print('num_features', num_features)
         for i in range(num_features):
             for j in range(num_features):
-                diff = torch.square(x[:, i] - x[:, j])
+                diff += torch.square(x[:, i] - x[:, j])
         diff = 1/(2*num_features*(num_features-1)) * diff
         div = diff.mean()
         print('div', div)

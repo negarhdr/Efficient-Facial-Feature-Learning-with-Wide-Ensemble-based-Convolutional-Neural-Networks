@@ -289,7 +289,6 @@ class ESR(nn.Module):
 
     def to_state_dict(self):
         state_dicts = [copy.deepcopy(self.base.state_dict())]
-
         for b in self.convolutional_branches:
             state_dicts.append(copy.deepcopy(b.state_dict()))
 
@@ -336,7 +335,7 @@ class ESR(nn.Module):
             heads = F.log_softmax(heads, dim=1)
 
         attn_emotion = self.attn_fc(heads.sum(dim=1))  # or we can remove the sum and in branch, apply log_softmax and then fc to produce sth with the same size of emotion/dimension outputs
-        attn_out = self.attn_bn(attn_emotion)
+        attn_emotion = self.attn_bn(attn_emotion)
 
         return emotions, affect_values, heads, attn_emotion
 
