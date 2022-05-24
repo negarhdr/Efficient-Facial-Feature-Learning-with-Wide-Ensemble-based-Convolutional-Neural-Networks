@@ -192,7 +192,7 @@ def main():
     # Define criterion
     criterion = nn.CrossEntropyLoss()
     attn_criterion = PartitionLoss()
-    diversity = FeatureDiversity()
+    # diversity = FeatureDiversity()
 
     # Load validation set
     # max_loaded_images_per_label=100000 loads the whole validation set
