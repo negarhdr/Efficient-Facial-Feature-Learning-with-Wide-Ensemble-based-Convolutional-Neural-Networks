@@ -122,6 +122,7 @@ class PartitionLoss(nn.Module):
 
     def forward(self, x):
         num_head = x.size(1)
+        print('num_head size', x.size())
 
         if num_head > 1:
             var = x.var(dim=1).mean()
@@ -132,7 +133,7 @@ class PartitionLoss(nn.Module):
         return loss
 
 
-class FeatureDiversity(nn.Module):
+'''class FeatureDiversity(nn.Module):
     def __init__(self, ):
         super(FeatureDiversity, self).__init__()
 
@@ -145,7 +146,7 @@ class FeatureDiversity(nn.Module):
         else:
             loss = 0
 
-        return loss
+        return loss'''
 
 
 def main():
