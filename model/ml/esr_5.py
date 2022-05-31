@@ -108,7 +108,7 @@ class ChannelAttention(nn.Module):
         )
 
     def forward(self, sa):
-        print('sa', sa)
+        # print('sa', sa)
         sa = self.gap(sa)
         sa = sa.view(sa.size(0), -1)
         y = self.attention(sa)
