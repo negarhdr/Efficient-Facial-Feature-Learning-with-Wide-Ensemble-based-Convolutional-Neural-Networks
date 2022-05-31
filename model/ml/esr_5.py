@@ -89,6 +89,7 @@ class SpatialAttention(nn.Module):
         y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
         y = y.sum(dim=1, keepdim=True)
         out = x * y
+        print('outshape', out.shape)
 
         return out
 
