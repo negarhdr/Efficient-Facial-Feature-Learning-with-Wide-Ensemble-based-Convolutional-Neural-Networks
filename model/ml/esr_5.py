@@ -111,7 +111,7 @@ class ChannelAttention(nn.Module):
         sa = sa.view(sa.size(0), -1)  # N x 512
         y = self.attention(sa)
         out = sa * y
-        print('ca', sa)
+        print('ca', y)
         return out
 
 
