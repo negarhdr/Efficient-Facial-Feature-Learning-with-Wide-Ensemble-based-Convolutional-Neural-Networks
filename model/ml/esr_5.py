@@ -84,12 +84,10 @@ class SpatialAttention(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        print('xshape', x.shape)
         y = self.conv1x1(x)
         y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
         y = y.sum(dim=1, keepdim=True)
-        out = x * y
-        print('outshape', out.shape)
+        out = x * y  # torch.Size([32, 512, 6, 6])
 
         return out
 
@@ -108,9 +106,9 @@ class ChannelAttention(nn.Module):
         )
 
     def forward(self, sa):
-        # print('sa', sa)
-        sa = self.gap(sa)
-        sa = sa.view(sa.size(0), -1)
+        print('sa', sa)
+        sa = self.gap(sa)  # N x 512 x 1 x 1
+        sa = sa.view(sa.size(0), -1)  # N x 512
         y = self.attention(sa)
         out = sa * y
         # print('ca', out)
@@ -200,13 +198,12 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
 
-        attn_head = self.cross_attn(x_conv_branch)  # attention head output
+        attn_head = self.cross_attn(x_conv_branch)  # attention head output # N x 512
         # print('attn_head', attn_head)
-        # print('attn_head size', attn_head.shape) # batchsize x 512
 
         # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
-        # x_conv_branch = self.global_pool(x_conv_branch)
-        # x_conv_branch = x_conv_branch.view(-1, 512)
+        # x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
+        # x_conv_branch = x_conv_branch.view(-1, 512)  # Nx 512
 
         # Fully connected layer for emotion perception
         discrete_emotion = self.fc(attn_head)
@@ -261,8 +258,9 @@ class ESR(nn.Module):
 
         self.to(device)
 
-        self.attn_fc = nn.Linear(512, 8)
-        self.attn_bn = nn.BatchNorm1d(8)
+        # self.attn_fc = nn.Linear(512, 8)
+        # self.attn_bn = nn.BatchNorm1d(8)
+
         # Evaluation mode on
         # self.eval()
 
