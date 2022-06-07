@@ -111,7 +111,7 @@ class ChannelAttention(nn.Module):
         # sa = self.gap(sa)  # N x 512 x 1 x 1
         sa = torch.mean(sa.view(sa.size(0), sa.size(1), -1), dim=2)
         print('gap', sa)
-        sa = sa.view(sa.size(0), -1)  # N x 512
+        # sa = sa.view(sa.size(0), -1)  # N x 512
         y = self.attention(sa)  # y becomes close to 0 , sa is close to infinite so it is nan! the multiplication is 0
         out = sa * y
         # print('ca', out)
