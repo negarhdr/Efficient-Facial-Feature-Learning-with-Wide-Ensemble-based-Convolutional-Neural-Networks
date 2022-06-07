@@ -55,9 +55,9 @@ class CrossAttentionHead(nn.Module):
                     init.constant_(m.bias, 0)
 
     def forward(self, x):
-        sa = self.sa(x)
-        ca = self.ca(sa)
-
+        # sa = self.sa(x)
+        # ca = self.ca(sa)
+        ca = self.ca(x)
         return ca
 
 
