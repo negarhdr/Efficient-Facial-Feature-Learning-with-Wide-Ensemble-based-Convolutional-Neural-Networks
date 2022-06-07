@@ -84,6 +84,7 @@ class SpatialAttention(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
+        print('x shape', x.shape)
         y = self.conv1x1(x)
         y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
         print('y_shape', y.shape)
