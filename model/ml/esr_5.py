@@ -201,7 +201,6 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
-        print('x_branch', x_conv_branch)
 
         attn_head = self.cross_attn(x_conv_branch)  # attention head output # N x 512
         discrete_emotion = self.fc(attn_head)
