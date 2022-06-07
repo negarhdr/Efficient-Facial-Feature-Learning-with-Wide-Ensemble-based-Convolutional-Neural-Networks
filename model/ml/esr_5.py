@@ -85,10 +85,11 @@ class SpatialAttention(nn.Module):
 
     def forward(self, x):
         y = self.conv1x1(x)
+        print('y,', y)
         y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
         y = y.sum(dim=1, keepdim=True)
         out = x * y  # torch.Size([32, 512, 6, 6])
-        print('y,', y)
+
 
         return out
 
