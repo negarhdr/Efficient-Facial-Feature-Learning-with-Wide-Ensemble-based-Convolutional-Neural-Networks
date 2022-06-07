@@ -88,6 +88,7 @@ class SpatialAttention(nn.Module):
         y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
         y = y.sum(dim=1, keepdim=True)
         out = x * y  # torch.Size([32, 512, 6, 6])
+        print('y,', y)
 
         return out
 
@@ -107,7 +108,7 @@ class ChannelAttention(nn.Module):
         )
 
     def forward(self, sa):
-        print('sa', sa)
+        # print('sa', sa)
         sa = self.gap(sa)  # N x 512 x 1 x 1
         #sa = torch.mean(sa.view(sa.size(0), sa.size(1), -1), dim=2)
         # print('gap', sa)
