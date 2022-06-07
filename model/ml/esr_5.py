@@ -66,8 +66,8 @@ class SpatialAttention(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1x1 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=1),
-            nn.BatchNorm2d(512),
+            nn.Conv2d(512, 256, kernel_size=1),
+            nn.BatchNorm2d(256),
         )
         self.conv_3x3 = nn.Sequential(
             nn.Conv2d(256, 512, kernel_size=3, padding=1),
@@ -85,7 +85,8 @@ class SpatialAttention(nn.Module):
 
     def forward(self, x):
         y = self.conv1x1(x)
-        # y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
+        y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
+        print('y_shape', y.shape)
         # y = y.sum(dim=1, keepdim=True)
         out = x * y  # torch.Size([32, 512, 6, 6])
 
