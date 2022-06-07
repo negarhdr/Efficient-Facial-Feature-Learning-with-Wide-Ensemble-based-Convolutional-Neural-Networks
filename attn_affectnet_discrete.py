@@ -150,6 +150,7 @@ class FeatureDiversity(nn.Module):
 
 # todo: diversity across branches
 
+
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/"
@@ -255,7 +256,7 @@ def main():
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
 
-                # loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
+                loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 #print('heads', heads)
                 #print('atten_loss', attn_criterion(heads))
                 # div = diversity(heads)  # diversity between different channels of attention
