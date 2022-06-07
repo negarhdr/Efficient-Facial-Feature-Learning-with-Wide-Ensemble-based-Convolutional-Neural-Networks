@@ -106,12 +106,12 @@ class ChannelAttention(nn.Module):
         )
 
     def forward(self, sa):
-        # print('sa', sa)
+        print('sa', sa)
         sa = self.gap(sa)  # N x 512 x 1 x 1
         sa = sa.view(sa.size(0), -1)  # N x 512
-        y = self.attention(sa)
+        y = self.attention(sa)  # y becomes close to 0 , sa is close to infinite so it is nan! the multiplication is 0
         out = sa * y
-        print('ca', y)
+        # print('ca', out)
         return out
 
 
