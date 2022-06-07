@@ -66,8 +66,8 @@ class SpatialAttention(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1x1 = nn.Sequential(
-            nn.Conv2d(512, 256, kernel_size=1),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, kernel_size=1),
+            nn.BatchNorm2d(512),
         )
         self.conv_3x3 = nn.Sequential(
             nn.Conv2d(256, 512, kernel_size=3, padding=1),
