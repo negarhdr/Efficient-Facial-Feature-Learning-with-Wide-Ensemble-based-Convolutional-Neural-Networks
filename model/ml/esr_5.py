@@ -36,7 +36,7 @@ import copy
 class CrossAttentionHead(nn.Module):
     def __init__(self):
         super().__init__()
-        # self.sa = SpatialAttention()
+        self.sa = SpatialAttention()
         self.ca = ChannelAttention()
         self.init_weights()
 
@@ -55,9 +55,9 @@ class CrossAttentionHead(nn.Module):
                     init.constant_(m.bias, 0)
 
     def forward(self, x):
-        # sa = self.sa(x)
-        # ca = self.ca(sa)
-        ca = self.ca(x)
+        sa = self.sa(x)
+        ca = self.ca(sa)
+        # ca = self.ca(x)
         return ca
 
 
@@ -85,8 +85,8 @@ class SpatialAttention(nn.Module):
 
     def forward(self, x):
         y = self.conv1x1(x)
-        y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
-        y = y.sum(dim=1, keepdim=True)
+        # y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
+        # y = y.sum(dim=1, keepdim=True)
         out = x * y  # torch.Size([32, 512, 6, 6])
 
         return out
