@@ -202,15 +202,14 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
         print('x_branch', x_conv_branch)
 
-        attn_head = self.cross_attn(x_conv_branch)  # attention head output # N x 512
-        # print('attn_head', attn_head)
+        # attn_head = self.cross_attn(x_conv_branch)  # attention head output # N x 512
+        # discrete_emotion = self.fc(attn_head)
 
         # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
-        # x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
-        # x_conv_branch = x_conv_branch.view(-1, 512)  # Nx 512
-
+        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
+        x_conv_branch = x_conv_branch.view(-1, 512)  # Nx 512
         # Fully connected layer for emotion perception
-        discrete_emotion = self.fc(attn_head)
+        discrete_emotion = self.fc(x_conv_branch)
 
         # Application of the ReLU function to neurons related to discrete emotion labels
         x_conv_branch = F.relu(discrete_emotion)

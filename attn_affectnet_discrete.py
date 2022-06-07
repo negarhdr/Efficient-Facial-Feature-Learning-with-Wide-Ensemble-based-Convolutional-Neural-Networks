@@ -262,7 +262,7 @@ def main():
                 # print('loss', div)
 
                 # Backward
-                # loss.backward()
+                loss.backward()
 
                 # Optimize
                 optimizer.step()
