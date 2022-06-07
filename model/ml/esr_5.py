@@ -87,7 +87,8 @@ class SpatialAttention(nn.Module):
         y = self.conv1x1(x)
         y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
         print('y_shape', y.shape)
-        # y = y.sum(dim=1, keepdim=True)
+        y = y.sum(dim=1, keepdim=True)
+        print('y_shape update', y.shape)
         out = x * y  # torch.Size([32, 512, 6, 6])
 
         return out
