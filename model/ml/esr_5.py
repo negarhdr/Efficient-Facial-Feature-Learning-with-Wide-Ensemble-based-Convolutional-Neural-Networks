@@ -218,7 +218,7 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_head
+        return discrete_emotion, continuous_affect, 0 #attn_head
 
 
 class ESR(nn.Module):
