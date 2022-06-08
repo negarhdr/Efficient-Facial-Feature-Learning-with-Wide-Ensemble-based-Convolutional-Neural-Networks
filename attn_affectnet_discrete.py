@@ -139,13 +139,22 @@ class FeatureDiversity(nn.Module):
 
     def forward(self, x):  # batch_size x num_branch x 512
         num_features = x.size(2)
+        num_branches = x.size(1)
         diff = 0
+        '''# diversity between different channels in all the branches
         for i in range(num_features):
             for j in range(num_features):
                 diff += torch.square(x[:, :, i] - x[:, :, j])
-        diff = 1/(2*num_features*(num_features-1)) * diff
-        # print('diff shape', diff.shape)
-        diff = torch.sum(diff, 1)
+        diff = 1/(2*num_features*(num_features-1)) * diff'''
+
+        # diversity between branches
+        for i in range(num_branches):
+            for j in range(num_branches):
+                diff += torch.square(x[:, i, :] - x[:, j, :])
+        diff = 1/(2*num_branches*(num_branches-1)) * diff
+        print('diff shape', diff.shape)
+
+        diff = torch.sum(diff, 2)
         div = diff.mean()
         return div
 
