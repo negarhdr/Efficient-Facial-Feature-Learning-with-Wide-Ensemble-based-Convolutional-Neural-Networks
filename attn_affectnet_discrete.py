@@ -269,10 +269,10 @@ def main():
                 loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 # print('atten_loss', attn_criterion(heads))
                 # print('loss after attention', loss)
-
-                div = diversity(heads)  # diversity between different channels of attention
-                # print('diversity', div)
-                loss -= div
+                if net.get_ensemble_size() > 1:
+                    div = diversity(heads)  # diversity between different channels of attention
+                    # print('diversity', div)
+                    loss -= div
 
                 # Backward
                 loss.backward()
