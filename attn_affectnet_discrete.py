@@ -159,7 +159,7 @@ def main():
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9
     validation_interval = 1
-    max_training_epoch = 50
+    max_training_epoch = 1
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
