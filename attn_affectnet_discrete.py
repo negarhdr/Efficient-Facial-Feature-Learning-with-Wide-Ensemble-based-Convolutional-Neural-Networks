@@ -261,6 +261,7 @@ def main():
                 #print('atten_loss', attn_criterion(heads))
                 div = diversity(heads)  # diversity between different channels of attention
                 print('loss', div)
+                loss -= div
 
                 # Backward
                 loss.backward()
