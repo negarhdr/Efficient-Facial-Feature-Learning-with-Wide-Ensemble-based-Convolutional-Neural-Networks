@@ -152,11 +152,10 @@ class FeatureDiversity(nn.Module):
             for j in range(num_branches):
                 diff += torch.square(x[:, i, :] - x[:, j, :])
         diff = (1/(2*num_branches*(num_branches-1) + 1e-10)) * diff
-        print('diff shape', diff.shape)
 
         diff = torch.sum(diff, 1)
         div = diff.mean()
-        return div
+        return torch.log(1+div)
 
 # todo: diversity across branches
 
