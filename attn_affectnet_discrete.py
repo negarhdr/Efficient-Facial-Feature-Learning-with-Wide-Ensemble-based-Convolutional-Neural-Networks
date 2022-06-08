@@ -122,7 +122,7 @@ class PartitionLoss(nn.Module):
 
     def forward(self, x):
         num_head = x.size(1)
-        # print('num_head size', x.size())  # batch_size * num_branches * 512
+        # print('num_head size', x.size(1))  # batch_size * num_branches * 512
 
         if num_head > 1:
             var = x.var(dim=1).mean()
@@ -259,8 +259,8 @@ def main():
                 loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 #print('heads', heads)
                 #print('atten_loss', attn_criterion(heads))
-                # div = diversity(heads)  # diversity between different channels of attention
-                # print('loss', div)
+                div = diversity(heads)  # diversity between different channels of attention
+                print('loss', div)
 
                 # Backward
                 loss.backward()
@@ -310,7 +310,7 @@ def main():
                     best_ensemble = net.to_state_dict()
 
                     # Save network
-                    ESR.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'Saved Networks'),
+                    ESR.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'SavedNetworks'),
                                   net.get_ensemble_size())
 
                 # Save graphs
