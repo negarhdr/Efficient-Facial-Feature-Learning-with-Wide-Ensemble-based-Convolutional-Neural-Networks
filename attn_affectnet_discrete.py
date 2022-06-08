@@ -141,6 +141,7 @@ class FeatureDiversity(nn.Module):
         num_features = x.size(2)
         num_branches = x.size(1)
         diff = 0
+        div = 0
         '''# diversity between different channels in all the branches
         for i in range(num_features):
             for j in range(num_features):
@@ -148,16 +149,14 @@ class FeatureDiversity(nn.Module):
         diff = 1/(2*num_features*(num_features-1)) * diff'''
 
         # diversity between branches
-        for i in range(num_branches):
-            for j in range(num_branches):
-                diff += torch.square(x[:, i, :] - x[:, j, :])
-        diff = (1/(2*num_branches*(num_branches-1) + 1e-10)) * diff
-
-        diff = torch.sum(diff, 1)
-        div = diff.mean()
+        if num_branches > 1:
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    diff += torch.square(x[:, i, :] - x[:, j, :])
+            diff = (1/(2*num_branches*(num_branches-1))) * diff
+            diff = torch.sum(diff, 1)
+            div = diff.mean()
         return torch.log(1+div)
-
-# todo: diversity across branches
 
 
 def main():
@@ -265,14 +264,13 @@ def main():
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
 
-                # print('loss before attention', loss)
-                loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
+                print('loss before div', loss)
+                # loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 # print('atten_loss', attn_criterion(heads))
                 # print('loss after attention', loss)
-                if net.get_ensemble_size() > 1:
-                    div = diversity(heads)  # diversity between different channels of attention
-                    # print('diversity', div)
-                    loss -= div
+                div = diversity(heads)  # diversity between different channels of attention
+                print('diversity', div)
+                loss -= div
 
                 # Backward
                 loss.backward()
