@@ -140,7 +140,6 @@ class FeatureDiversity(nn.Module):
     def forward(self, x):  # batch_size x num_branch x 512
         num_features = x.size(2)
         diff = 0
-        diff += torch.square()
         for i in range(num_features):
             for j in range(num_features):
                 diff += torch.square(x[:, :, i] - x[:, :, j])
