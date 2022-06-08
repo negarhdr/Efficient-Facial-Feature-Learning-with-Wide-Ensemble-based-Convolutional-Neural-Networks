@@ -141,7 +141,6 @@ class FeatureDiversity(nn.Module):
         num_features = x.size(2)
         num_branches = x.size(1)
         diff = 0
-        div = torch.zeros(1)
         '''# diversity between different channels in all the branches
         for i in range(num_features):
             for j in range(num_features):
@@ -149,13 +148,12 @@ class FeatureDiversity(nn.Module):
         diff = 1/(2*num_features*(num_features-1)) * diff'''
 
         # diversity between branches
-        if num_branches > 1:
-            for i in range(num_branches):
-                for j in range(num_branches):
-                    diff += torch.square(x[:, i, :] - x[:, j, :])
-            diff = (1/(2*num_branches*(num_branches-1))) * diff
-            diff = torch.sum(diff, 1)
-            div = diff.mean()
+        for i in range(num_branches):
+            for j in range(num_branches):
+                diff += torch.square(x[:, i, :] - x[:, j, :])
+        diff = (1/(2*num_branches*(num_branches-1))) * diff
+        diff = torch.sum(diff, 1)
+        div = diff.mean()
         return torch.log(1+div)
 
 
@@ -268,9 +266,10 @@ def main():
                 # loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 # print('atten_loss', attn_criterion(heads))
                 # print('loss after attention', loss)
-                div = diversity(heads)  # diversity between different channels of attention
-                print('diversity', div)
-                loss -= div
+                if net.get_ensemble_size() > 1:
+                    div = diversity(heads)  # diversity between different channels of attention
+                    print('diversity', div)
+                    loss -= div
 
                 # Backward
                 loss.backward()
