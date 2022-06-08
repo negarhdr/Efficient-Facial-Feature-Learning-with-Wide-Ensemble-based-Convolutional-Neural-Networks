@@ -164,7 +164,7 @@ def main():
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9
     validation_interval = 1
-    max_training_epoch = 50
+    max_training_epoch = 1
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
@@ -332,7 +332,7 @@ def main():
         # Change branch on training
         if net.get_ensemble_size() < num_branches_trained_network:
             # Decrease maximum training epoch
-            max_training_epoch = 20
+            max_training_epoch = 1
 
             # Reload best configuration
             net.reload(best_ensemble)
