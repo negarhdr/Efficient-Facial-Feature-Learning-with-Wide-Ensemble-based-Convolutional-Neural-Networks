@@ -271,8 +271,8 @@ def main():
                 # print('loss after attention', loss)
 
                 div = diversity(heads)  # diversity between different channels of attention
-                print('diversity', div)
-                # loss -= div
+                # print('diversity', div)
+                loss -= div
 
                 # Backward
                 loss.backward()
