@@ -262,13 +262,13 @@ def main():
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
 
-                print('loss before div', loss)
+                # print('loss before div', loss)
                 # loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 # print('atten_loss', attn_criterion(heads))
                 # print('loss after attention', loss)
                 if net.get_ensemble_size() > 1:
                     div = diversity(heads)  # diversity between different channels of attention
-                    print('diversity', div)
+                    # print('diversity', div)
                     loss += div
 
                 # Backward
