@@ -74,7 +74,8 @@ class GradCAM:
         self._gradients.append(grads)
 
     def get_mean_gradients(self):
-        return self._gradients[0].mean(3).mean(2)[0]
+        # return self._gradients[0].mean(3).mean(2)[0]
+        return self._gradients[0][0]
 
     def grad_cam(self, x, list_y):
         list_saliency_maps = []
@@ -103,7 +104,8 @@ class GradCAM:
             # Computes saliency map as a weighted sum of feature maps and mean gradient
             saliency_map = torch.zeros(feature_maps.size()[1:]).to(self._device)
             for i, w in enumerate(grad_cam_weights):
-                saliency_map += w * feature_maps[i, :, :]
+                # saliency_map += w * feature_maps[i, :, :]
+                saliency_map += w * feature_maps[i, :]
 
             # Normalize saliency maps
             saliency_map = torch.clamp(saliency_map, min=0)
