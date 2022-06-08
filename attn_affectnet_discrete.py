@@ -140,10 +140,12 @@ class FeatureDiversity(nn.Module):
     def forward(self, x):  # batch_size x num_branch x 512
         num_features = x.size(2)
         diff = 0
+        diff += torch.square()
         for i in range(num_features):
             for j in range(num_features):
                 diff += torch.square(x[:, :, i] - x[:, :, j])
         diff = 1/(2*num_features*(num_features-1)) * diff
+        print('diff shape', diff.shape)
         diff = torch.sum(diff, 1)
         div = diff.mean()
         return div
@@ -261,7 +263,7 @@ def main():
                 #print('atten_loss', attn_criterion(heads))
                 div = diversity(heads)  # diversity between different channels of attention
                 print('loss', div)
-                loss -= div
+                # loss -= div
 
                 # Backward
                 loss.backward()
