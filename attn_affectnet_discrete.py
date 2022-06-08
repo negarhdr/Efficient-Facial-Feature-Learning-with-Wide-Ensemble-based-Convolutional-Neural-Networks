@@ -154,7 +154,7 @@ class FeatureDiversity(nn.Module):
         diff = (1/(2*num_branches*(num_branches-1))) * diff
         diff = torch.sum(diff, 1)
         div = diff.mean()
-        return torch.log(1+div)
+        return torch.log(1 + 1/div)
 
 
 def main():
@@ -164,7 +164,7 @@ def main():
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9
     validation_interval = 1
-    max_training_epoch = 1
+    max_training_epoch = 50
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
@@ -269,7 +269,7 @@ def main():
                 if net.get_ensemble_size() > 1:
                     div = diversity(heads)  # diversity between different channels of attention
                     print('diversity', div)
-                    loss -= div
+                    loss += div
 
                 # Backward
                 loss.backward()
@@ -332,7 +332,7 @@ def main():
         # Change branch on training
         if net.get_ensemble_size() < num_branches_trained_network:
             # Decrease maximum training epoch
-            max_training_epoch = 1
+            max_training_epoch = 20
 
             # Reload best configuration
             net.reload(best_ensemble)
