@@ -151,7 +151,7 @@ class FeatureDiversity(nn.Module):
         for i in range(num_branches):
             for j in range(num_branches):
                 diff += torch.square(x[:, i, :] - x[:, j, :])
-        diff = 1/(2*num_branches*(num_branches-1)) * diff
+        diff = 1/(2*num_branches*(num_branches)) * diff
         print('diff shape', diff.shape)
 
         diff = torch.sum(diff, 2)
