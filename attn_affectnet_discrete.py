@@ -141,7 +141,7 @@ class FeatureDiversity(nn.Module):
         num_features = x.size(2)
         num_branches = x.size(1)
         diff = 0
-        div = 0
+        div = torch.zeros(1)
         '''# diversity between different channels in all the branches
         for i in range(num_features):
             for j in range(num_features):
