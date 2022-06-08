@@ -154,7 +154,7 @@ class FeatureDiversity(nn.Module):
         diff = (1/(2*num_branches*(num_branches-1) + 1e-10)) * diff
         print('diff shape', diff.shape)
 
-        diff = torch.sum(diff, 2)
+        diff = torch.sum(diff, 1)
         div = diff.mean()
         return div
 
