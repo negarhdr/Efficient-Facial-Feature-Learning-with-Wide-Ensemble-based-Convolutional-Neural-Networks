@@ -241,7 +241,7 @@ def main():
     name_experiment = "Main_ESR_9_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9
-    validation_interval = 2
+    validation_interval = 1
     max_training_epoch = 50
 
     # Make dir

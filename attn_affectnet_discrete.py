@@ -162,9 +162,9 @@ def main():
     base_path_experiment = "./experiments/AffectNet_Discrete/"
     name_experiment = "Attn_ESR_9_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
-    num_branches_trained_network = 9
+    num_branches_trained_network = 1
     validation_interval = 1
-    max_training_epoch = 50
+    max_training_epoch = 150
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
@@ -266,10 +266,10 @@ def main():
                 # loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
                 # print('atten_loss', attn_criterion(heads))
                 # print('loss after attention', loss)
-                '''if net.get_ensemble_size() > 1:
+                if net.get_ensemble_size() > 1:
                     div = diversity(heads)  # diversity between different channels of attention
                     # print('diversity', div)
-                    loss += div'''
+                    loss += div
 
                 # Backward
                 loss.backward()
