@@ -160,7 +160,7 @@ class FeatureDiversity(nn.Module):
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/"
-    name_experiment = "Attn_ESR_9_AffectNet_Discrete"
+    name_experiment = "Attn_ESR_1_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 1
     validation_interval = 1
@@ -319,7 +319,7 @@ def main():
                     best_ensemble = net.to_state_dict()
 
                     # Save network
-                    ESR.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'SavedNetworks_wo_div'),
+                    ESR.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'SavedNetworks_w_div_1b'),
                                   net.get_ensemble_size())
 
                 # Save graphs
