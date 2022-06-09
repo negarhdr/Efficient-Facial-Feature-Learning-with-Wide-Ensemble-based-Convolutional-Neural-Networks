@@ -238,7 +238,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/"
-    name_experiment = "ESR_9-AffectNet_Discrete"
+    name_experiment = "Main_ESR_9_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9
     validation_interval = 2
@@ -386,7 +386,7 @@ def main():
                     best_ensemble = net.to_state_dict()
 
                     # Save network
-                    Ensemble.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'Saved Networks'),
+                    Ensemble.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'Saved_Networks'),
                                   net.get_ensemble_size())
 
                 # Save graphs
