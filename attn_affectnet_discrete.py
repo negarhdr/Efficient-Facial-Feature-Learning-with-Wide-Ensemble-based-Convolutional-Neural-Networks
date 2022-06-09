@@ -26,7 +26,7 @@ import numpy as np
 import torch
 from os import path, makedirs
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Modules
 from model.utils import udata, umath
