@@ -81,7 +81,7 @@ class ConvolutionalBranch(nn.Module):
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(512)
 
-        self.cbam = CBAM(reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam = CBAM()
 
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc = nn.Linear(512, 8)
