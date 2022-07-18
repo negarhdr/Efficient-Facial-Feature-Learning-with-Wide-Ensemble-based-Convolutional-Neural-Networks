@@ -40,7 +40,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _, _ = val_model_eval(inputs_eval)
+        outputs_eval, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -116,57 +116,14 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
-class PartitionLoss(nn.Module):
-    def __init__(self, ):
-        super(PartitionLoss, self).__init__()
-
-    def forward(self, x):
-        num_head = x.size(1)
-        # print('num_head size', x.size(1))  # batch_size * num_branches * 512
-
-        if num_head > 1:
-            var = x.var(dim=1).mean()
-            # print('var_shape', var.shape)
-            loss = torch.log(1 + num_head / (var + 1e-10))
-        else:
-            loss = 0
-        return loss
-
-
-class FeatureDiversity(nn.Module):
-    def __init__(self, ):
-        super(FeatureDiversity, self).__init__()
-
-    def forward(self, x):  # batch_size x num_branch x 512
-        num_features = x.size(2)
-        num_branches = x.size(1)
-        diff = 0
-        '''# diversity between different channels in all the branches
-        for i in range(num_features):
-            for j in range(num_features):
-                diff += torch.square(x[:, :, i] - x[:, :, j])
-        diff = 1/(2*num_features*(num_features-1)) * diff'''
-
-        # diversity between branches
-        for i in range(num_branches):
-            for j in range(num_branches):
-                diff += torch.square(x[:, i, :] - x[:, j, :])
-
-        diff = (1/(2*num_branches*(num_branches-1))) * diff
-
-        diff = torch.sum(diff, 1)  # batchsize x 512
-        div = diff.mean()
-        return torch.log(1 + 1/div)
-
-
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/"
-    name_experiment = "Attn_ESR_1_AffectNet_Discrete"
+    name_experiment = "CBAM_ESR_1_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 1
     validation_interval = 1
-    max_training_epoch = 150
+    max_training_epoch = 200
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
@@ -175,9 +132,7 @@ def main():
     # Define transforms
     data_transforms = [transforms.ColorJitter(brightness=0.5, contrast=0.5),
                        transforms.RandomHorizontalFlip(p=0.5),
-                       transforms.RandomAffine(degrees=30,
-                                               translate=(.1, .1),
-                                               scale=(1.0, 1.25),
+                       transforms.RandomAffine(degrees=30, translate=(.1, .1), scale=(1.0, 1.25),
                                                resample=Image.BILINEAR)]
 
     # Running device
@@ -201,11 +156,8 @@ def main():
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
-    attn_criterion = PartitionLoss()
-    diversity = FeatureDiversity()
 
-    # Load validation set
-    # max_loaded_images_per_label=100000 loads the whole validation set
+    # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,
                                           max_loaded_images_per_label=100000,
                                           transforms=None,
@@ -254,7 +206,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, heads = net(inputs)
+                emotions, affect_values = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -263,15 +215,6 @@ def main():
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
-
-                # print('loss before div', loss)
-                # loss += attn_criterion(heads)    # partition loss between different attention heads (maximize the difference between them)
-                # print('atten_loss', attn_criterion(heads))
-                # print('loss after attention', loss)
-                if net.get_ensemble_size() > 1:
-                    div = diversity(heads)  # diversity between different channels of attention
-                    # print('diversity', div)
-                    loss += div
 
                 # Backward
                 loss.backward()
@@ -284,22 +227,22 @@ def main():
                 running_updates += 1
 
             # Statistics
-            print('[Branch {:d}, Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
-                                                                                 epoch + 1,
-                                                                                 max_training_epoch,
-                                                                                 running_loss / running_updates,
-                                                                                 np.array(running_corrects) / len(train_data)))
+            print('[Branch {:d}, '
+                  'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
+                                                                   epoch + 1,
+                                                                   max_training_epoch,
+                                                                   running_loss / running_updates,
+                                                                   np.array(running_corrects) / len(train_data)))
             # Validation
             if ((epoch % validation_interval) == 0) or ((epoch + 1) == max_training_epoch):
                 net.eval()
-
                 val_loss, val_corrects = evaluate(net, val_loader, criterion, device)
-
-                print('Validation - [Branch {:d}, Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
-                                                                                                  epoch + 1,
-                                                                                                  max_training_epoch,
-                                                                                                  val_loss[-1],
-                                                                                                  np.array(val_corrects) / len(val_data)))
+                print('Validation - [Branch {:d}, '
+                      'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
+                                                                       epoch + 1,
+                                                                       max_training_epoch,
+                                                                       val_loss[-1],
+                                                                       np.array(val_corrects) / len(val_data)))
 
                 # Add to history training and validation statistics
                 history_loss.append(running_loss / running_updates)
@@ -334,7 +277,7 @@ def main():
         # Change branch on training
         if net.get_ensemble_size() < num_branches_trained_network:
             # Decrease maximum training epoch
-            max_training_epoch = 20
+            max_training_epoch = 50
 
             # Reload best configuration
             net.reload(best_ensemble)
@@ -347,9 +290,11 @@ def main():
 
             # Set optimizer
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
-                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
+                                    'momentum': 0.9}])
             for b in range(net.get_ensemble_size() - 1):
-                optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01, 'momentum': 0.9})
+                optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
+                                           'momentum': 0.9})
 
         # Finish training after training all branches
         else:
@@ -360,3 +305,15 @@ if __name__ == "__main__":
     print("Processing...")
     main()
     print("Process has finished!")
+
+
+# todo:
+# this version only adds cbam layers in all the branches and trains all the branches with CE loss. What more we can do:
+"""
+1. Train only one branch with attention and see the result 
+2. Freeze the previous layers when start training a new one 
+3. Use diversity loss to increase the diversity between the attentions (try both diversity and similarity functions 
+and make it efficient) 
+4. Try also the partition loss 
+5. Visualize the attention values using GradCAM
+"""

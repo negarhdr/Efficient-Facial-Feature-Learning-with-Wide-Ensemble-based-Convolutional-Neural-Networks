@@ -257,7 +257,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
     val_targets_valence = torch.stack(val_targets_valence)
     val_targets_arousal = torch.stack(val_targets_arousal)
 
-    evaluate_val_losses = [[], []]  # valence, arousal (2 lists , each have 10 values, 1-9 for branch losses and 10 for ensemble loss)
+    evaluate_val_losses = [[], []]   # valence, arousal (2 lists , each have 10 values, 1-9 for branch losses and 10 for ensemble loss)
     for evaluate_branch in range(val_model_eval.get_ensemble_size() + 1):
         if (evaluate_branch < (val_model_eval.get_ensemble_size() - current_branch_on_training_val)) or (evaluate_branch == val_model_eval.get_ensemble_size()):
             list_tensor = torch.stack(val_predictions[evaluate_branch])
@@ -439,7 +439,7 @@ def main():
                     max_training_epoch,
                     [hvlv[-1] for hvlv in history_val_loss_valence],
                     [hvla[-1] for hvla in history_val_loss_arousal]
-                ))   # for each branch, it prints the last value which is for the latest epoch! so it prints 10 values for valence and 10 for arousal! (for each branch it has num_epochs values in total)
+                ))  # for each branch, it prints the last value which is for the latest epoch! so it prints 10 values for valence and 10 for arousal! (for each branch it has num_epochs values in total)
 
                 # Save best ensemble
                 ensemble_rmse = float(history_val_loss_valence[-1][-1]) + float(history_val_loss_arousal[-1][-1])

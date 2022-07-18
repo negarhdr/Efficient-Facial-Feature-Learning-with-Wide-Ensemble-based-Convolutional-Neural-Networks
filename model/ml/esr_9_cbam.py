@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This is the first version of esr_5 in which I applied the first attention method which didn't work
-I don't run this code anymore!
+This is the second version of esr_5 in which I apply the new attention methods (efficient and effective ones, SE, CBAM)
 """
 
 __author__ = "Henrique Siqueira"
@@ -12,102 +11,13 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 # Standard libraries
-from os import path
-
-# External libraries
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
-import torch.nn.init as init
 from os import path, makedirs
 import copy
-
-# you need to check attention values! it gives me Nan values
-
-class CrossAttentionHead(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.sa = SpatialAttention()
-        self.ca = ChannelAttention()
-        self.init_weights()
-
-    def init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                init.kaiming_normal_(m.weight, mode='fan_out')
-                if m.bias is not None:
-                    init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                init.constant_(m.weight, 1)
-                init.constant_(m.bias, 0)
-            elif isinstance(m, nn.Linear):
-                init.normal_(m.weight, std=0.001)
-                if m.bias is not None:
-                    init.constant_(m.bias, 0)
-
-    def forward(self, x):
-        sa = self.sa(x)
-        ca = self.ca(sa)
-        # ca = self.ca(x)
-        return ca
-
-
-class SpatialAttention(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.conv1x1 = nn.Sequential(
-            nn.Conv2d(512, 256, kernel_size=1),
-            nn.BatchNorm2d(256),
-        )
-        self.conv_3x3 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-        )
-        self.conv_1x3 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=(1, 3), padding=(0, 1)),
-            nn.BatchNorm2d(512),
-        )
-        self.conv_3x1 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=(3, 1), padding=(1, 0)),
-            nn.BatchNorm2d(512),
-        )
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        y = self.conv1x1(x)
-        y = self.relu(self.conv_3x3(y) + self.conv_1x3(y) + self.conv_3x1(y))
-        # y = y.sum(dim=1, keepdim=True)
-        # print('y_shape', y.shape)
-        out = x * y  # torch.Size([32, 512, 6, 6])
-
-        return out
-
-
-class ChannelAttention(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.gap = nn.AdaptiveAvgPool2d(1)
-        self.attention = nn.Sequential(
-            nn.Linear(512, 32),
-            nn.BatchNorm1d(32),
-            nn.ReLU(),
-            # nn.ReLU(inplace=True),
-            nn.Linear(32, 512),
-            nn.Sigmoid()
-        )
-
-    def forward(self, sa):
-        # print('sa', sa)
-        sa = self.gap(sa)  # N x 512 x 1 x 1
-        #sa = torch.mean(sa.view(sa.size(0), sa.size(1), -1), dim=2)
-        # print('gap', sa)
-        sa = sa.view(sa.size(0), -1)  # N x 512
-        y = self.attention(sa)  # y becomes close to 0 , sa is close to infinite so it is nan! the multiplication is 0
-        out = sa * y
-        # print('ca', out)
-        return out
+# External modules
+from cbam import CBAM
 
 
 class Base(nn.Module):
@@ -171,7 +81,7 @@ class ConvolutionalBranch(nn.Module):
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(512)
 
-        self.cross_attn = CrossAttentionHead()
+        self.cbam = CBAM(reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
 
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc = nn.Linear(512, 8)
@@ -179,7 +89,6 @@ class ConvolutionalBranch(nn.Module):
         # Last, fully-connected layer related to continuous affect levels (arousal and valence)
         self.fc_dimensional = nn.Linear(8, 2)
 
-        # Pooling layers
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
 
@@ -189,20 +98,27 @@ class ConvolutionalBranch(nn.Module):
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
         x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
+        print('xconv1 shape', x_conv_branch.shape)
+        x_conv_branch = self.cbam(x_conv_branch)
+
         x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
+        print('xconv2 shape', x_conv_branch.shape)
+        x_conv_branch = self.cbam(x_conv_branch)
+
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
+        print('xconv3 shape', x_conv_branch.shape)
+        x_conv_branch = self.cbam(x_conv_branch)
+
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
+        print('xconv4 shape', x_conv_branch.shape)
+        x_conv_branch = self.cbam(x_conv_branch)
 
-        attn_head = self.cross_attn(x_conv_branch)  # attention head output # N x 512
-        discrete_emotion = self.fc(attn_head)
+        # Prepare features for Classification & Regression
+        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
+        x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
 
-        # I think we can comment the next two lines (gap, reshape) and pass the attn_head to the fc & fc_dimensional
-        # x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
-        # x_conv_branch = x_conv_branch.view(-1, 512)  # Nx 512
-
-        # attn_head = x_conv_branch
-        # Fully connected layer for emotion perception
-        # discrete_emotion = self.fc(x_conv_branch)
+        # Fully connected layer for expression recognition
+        discrete_emotion = self.fc(x_conv_branch)
 
         # Application of the ReLU function to neurons related to discrete emotion labels
         x_conv_branch = F.relu(discrete_emotion)
@@ -211,7 +127,7 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_head
+        return discrete_emotion, continuous_affect
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -229,10 +145,13 @@ class ConvolutionalBranch(nn.Module):
 
         # Convolutional, batch-normalization and pooling layers
         x_to_last_conv_layer = F.relu(self.bn1(self.conv1(x_shared_representations)))
+        x_to_last_conv_layer = self.cbam(x_to_last_conv_layer)
         x_to_last_conv_layer = self.pool(F.relu(self.bn2(self.conv2(x_to_last_conv_layer))))
+        x_to_last_conv_layer = self.cbam(x_to_last_conv_layer)
         x_to_last_conv_layer = F.relu(self.bn3(self.conv3(x_to_last_conv_layer)))
+        x_to_last_conv_layer = self.cbam(x_to_last_conv_layer)
         x_to_last_conv_layer = F.relu(self.bn4(self.conv4(x_to_last_conv_layer)))
-        x_to_last_conv_layer = self.cross_attn(x_to_last_conv_layer)  # attention head output # N x 512
+        x_to_last_conv_layer = self.cbam(x_to_last_conv_layer)
 
         # Feature maps of the last convolutional layer
         return x_to_last_conv_layer
@@ -247,11 +166,11 @@ class ConvolutionalBranch(nn.Module):
         """
 
         # Global average polling and reshape
-        # x_to_output_layer = self.global_pool(x_from_last_conv_layer)
-        # x_to_output_layer = x_to_output_layer.view(-1, 512)
+        x_to_output_layer = self.global_pool(x_from_last_conv_layer)
+        x_to_output_layer = x_to_output_layer.view(-1, 512)
 
         # Output layer: emotion labels
-        x_to_output_layer = self.fc(x_from_last_conv_layer)
+        x_to_output_layer = self.fc(x_to_output_layer)
 
         # Returns activations of the discrete emotion output layer
         return x_to_output_layer
@@ -294,12 +213,7 @@ class ESR(nn.Module):
 
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
         self.convolutional_branches = []
-
         self.to(device)
-
-        # self.attn_fc = nn.Linear(512, 8)
-        # self.attn_bn = nn.BatchNorm1d(8)
-
         # Evaluation mode on
         # self.eval()
 
@@ -316,15 +230,12 @@ class ESR(nn.Module):
             makedirs(path.join(base_path_to_save_model, str(current_branch_save)))
 
         torch.save(state_dicts[0],
-                   path.join(base_path_to_save_model,
-                             str(current_branch_save),
+                   path.join(base_path_to_save_model, str(current_branch_save),
                              "Net-Base-Shared_Representations.pt"))
 
         for i in range(1, len(state_dicts)):
-            torch.save(state_dicts[i],
-                       path.join(base_path_to_save_model,
-                                 str(current_branch_save),
-                                 "Net-Branch_{}.pt".format(i)))
+            torch.save(state_dicts[i], path.join(base_path_to_save_model, str(current_branch_save),
+                                                 "Net-Branch_{}.pt".format(i)))
 
         print("Network has been "
               "saved at: {}".format(path.join(base_path_to_save_model, str(current_branch_save))))
@@ -360,24 +271,15 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         affect_values = []
-        attn_heads = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attention_head = branch(x_shared_representations)
+            output_emotion, output_affect = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            attn_heads.append(attention_head)
-        # print('attn_heads', attn_heads)
-        heads = torch.stack(attn_heads).permute([1, 0, 2])
-        if heads.size(1) > 1:
-            heads = F.log_softmax(heads, dim=1)
 
-        # attn_emotion = self.attn_fc(heads.sum(dim=1))  # or we can remove the sum and in branch, apply log_softmax and then fc to produce sth with the same size of emotion/dimension outputs
-        # attn_emotion = self.attn_bn(attn_emotion)
-
-        return emotions, affect_values, heads #, attn_emotion
+        return emotions, affect_values
 
