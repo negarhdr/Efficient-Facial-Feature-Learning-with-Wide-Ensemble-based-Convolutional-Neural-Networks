@@ -121,7 +121,7 @@ def main():
     base_path_experiment = "./experiments/AffectNet_Discrete/"
     name_experiment = "CBAM_ESR_1_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
-    num_branches_trained_network = 1
+    num_branches_trained_network = 9
     validation_interval = 1
     max_training_epoch = 200
 
@@ -310,7 +310,7 @@ if __name__ == "__main__":
 # todo:
 # this version only adds cbam layers in all the branches and trains all the branches with CE loss. What more we can do:
 """
-1. Train only one branch with attention and see the result 
+1. Train only one branch with attention and see the result --> 55.9%, loss:1.26
 2. Freeze the previous layers when start training a new one 
 3. Use diversity loss to increase the diversity between the attentions (try both diversity and similarity functions 
 and make it efficient) 
