@@ -101,19 +101,15 @@ class ConvolutionalBranch(nn.Module):
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
         x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        print('xconv1 shape', x_conv_branch.shape)
         x_conv_branch = self.cbam1(x_conv_branch)
 
         x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
-        print('xconv2 shape', x_conv_branch.shape)
         x_conv_branch = self.cbam2(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
-        print('xconv3 shape', x_conv_branch.shape)
         x_conv_branch = self.cbam3(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
-        print('xconv4 shape', x_conv_branch.shape)
         x_conv_branch = self.cbam4(x_conv_branch)
 
         # Prepare features for Classification & Regression
