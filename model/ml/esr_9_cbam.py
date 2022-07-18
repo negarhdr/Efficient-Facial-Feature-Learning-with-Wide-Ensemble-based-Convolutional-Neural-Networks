@@ -17,7 +17,7 @@ import torch
 from os import path, makedirs
 import copy
 # External modules
-from cbam import CBAM
+from .cbam import CBAM
 
 
 class Base(nn.Module):
