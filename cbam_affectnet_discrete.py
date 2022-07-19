@@ -119,11 +119,11 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/"
-    name_experiment = "CBAM_ESR_9_AffectNet_Discrete"
+    name_experiment = "CBAM_ESR_9_freeze_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9
     validation_interval = 1
-    max_training_epoch = 200
+    max_training_epoch = 100
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
@@ -277,7 +277,7 @@ def main():
         # Change branch on training
         if net.get_ensemble_size() < num_branches_trained_network:
             # Decrease maximum training epoch
-            max_training_epoch = 50
+            max_training_epoch = 30
 
             # Reload best configuration
             net.reload(best_ensemble)
@@ -292,9 +292,9 @@ def main():
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
                                     'momentum': 0.9}])
-            for b in range(net.get_ensemble_size() - 1):
+            '''for b in range(net.get_ensemble_size() - 1):
                 optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
-                                           'momentum': 0.9})
+                                           'momentum': 0.9})'''
 
         # Finish training after training all branches
         else:
@@ -311,7 +311,10 @@ if __name__ == "__main__":
 # this version only adds cbam layers in all the branches and trains all the branches with CE loss. What more we can do:
 """
 1. Train only one branch with attention and see the result --> 55.9%, loss:1.26
-2. Freeze the previous layers when start training a new one 
+2. Train 9 branches with attention and see the result --> 59% in branch 8 and similar results as before at earlier branches. 200 epochs first branch and 50 epochs next branches
+3. Freeze the previous layers when start training a new one --> 100 epochs the first branch and 30 the rest 
+4. Add attention to the base as well and train! 
+
 3. Use diversity loss to increase the diversity between the attentions (try both diversity and similarity functions 
 and make it efficient) 
 4. Try also the partition loss 
