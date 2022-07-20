@@ -304,14 +304,14 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/cbam_set2")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_freeze_base_branch_AffectNet_Discrete")
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/cbam_set3")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
-    parser.add_argument("--max_training_epoch", default=100)
-    parser.add_argument("--max_finetune_epoch", default=30)
-    parser.add_argument("--freeze_trained_branches", default=True)
+    parser.add_argument("--max_training_epoch", default=50)
+    parser.add_argument("--max_finetune_epoch", default=20)
+    parser.add_argument("--freeze_trained_branches", default=False)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--gpu_indx", default="0")
 
