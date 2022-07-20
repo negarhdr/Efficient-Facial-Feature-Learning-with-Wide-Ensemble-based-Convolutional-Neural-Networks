@@ -26,7 +26,9 @@ import numpy as np
 import torch
 from os import path, makedirs
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import argparse
+
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Modules
 from model.utils import udata, umath
@@ -116,18 +118,13 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
-def main():
+def main(args):
     # Experimental variables
-    base_path_experiment = "./experiments/AffectNet_Discrete/cbam_set2"
-    name_experiment = "CBAM_ESR_9_freeze_AffectNet_Discrete"
-    base_path_to_dataset = "../FER_data/AffectNet/"
-    num_branches_trained_network = 9
-    validation_interval = 1
-    max_training_epoch = 100
+    max_training_epoch = args.max_training_epoch
 
     # Make dir
-    if not path.isdir(path.join(base_path_experiment, name_experiment)):
-        makedirs(path.join(base_path_experiment, name_experiment))
+    if not path.isdir(path.join(args.base_path_experiment, args.name_experiment)):
+        makedirs(path.join(args.base_path_experiment, args.name_experiment))
 
     # Define transforms
     data_transforms = [transforms.ColorJitter(brightness=0.5, contrast=0.5),
@@ -136,9 +133,9 @@ def main():
                                                resample=Image.BILINEAR)]
 
     # Running device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() and args.device == "cuda" else "cpu")
 
-    print("Starting: {}".format(str(name_experiment)))
+    print("Starting: {}".format(str(args.name_experiment)))
     print("Running on {}".format(device))
 
     # Initialize network
@@ -162,18 +159,18 @@ def main():
                                           max_loaded_images_per_label=100000,
                                           transforms=None,
                                           is_norm_by_mean_std=False,
-                                          base_path_to_affectnet=base_path_to_dataset)
+                                          base_path_to_affectnet=args.base_path_to_dataset)
 
     val_loader = DataLoader(val_data, batch_size=32, shuffle=False, num_workers=8)
 
     # Train ESR-9
-    for branch_on_training in range(num_branches_trained_network):
+    for branch_on_training in range(args.num_branches_trained_network):
         # Load training data
         train_data = udata.AffectNetCategorical(idx_set=0,
                                                 max_loaded_images_per_label=5000,
                                                 transforms=transforms.Compose(data_transforms),
                                                 is_norm_by_mean_std=False,
-                                                base_path_to_affectnet=base_path_to_dataset)
+                                                base_path_to_affectnet=args.base_path_to_dataset)
 
         # Best network
         best_ensemble = net.to_state_dict()
@@ -234,7 +231,7 @@ def main():
                                                                    running_loss / running_updates,
                                                                    np.array(running_corrects) / len(train_data)))
             # Validation
-            if ((epoch % validation_interval) == 0) or ((epoch + 1) == max_training_epoch):
+            if ((epoch % args.validation_interval) == 0) or ((epoch + 1) == max_training_epoch):
                 net.eval()
                 val_loss, val_corrects = evaluate(net, val_loader, criterion, device)
                 print('Validation - [Branch {:d}, '
@@ -264,20 +261,20 @@ def main():
                     best_ensemble = net.to_state_dict()
 
                     # Save network
-                    ESR.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'SavedNetworks_w_div_1b'),
-                                  net.get_ensemble_size())
+                    ESR.save(best_ensemble, path.join(args.base_path_experiment, args.name_experiment, 'SavedNetworks'),
+                             net.get_ensemble_size())
 
                 # Save graphs
                 plot(history_loss, history_acc, history_val_loss, history_val_acc,
-                     net.get_ensemble_size(), path.join(base_path_experiment, name_experiment))
+                     net.get_ensemble_size(), path.join(args.base_path_experiment, args.name_experiment))
 
                 # Set network to training mode
                 net.train()
 
         # Change branch on training
-        if net.get_ensemble_size() < num_branches_trained_network:
+        if net.get_ensemble_size() < args.num_branches_trained_network:
             # Decrease maximum training epoch
-            max_training_epoch = 30
+            max_training_epoch = args.max_finetune_epoch
 
             # Reload best configuration
             net.reload(best_ensemble)
@@ -288,13 +285,16 @@ def main():
             # Send params to device
             net.to_device(device)
 
-            # Set optimizer
+            # Set optimizer for base and the new branch
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
                                     'momentum': 0.9}])
-            '''for b in range(net.get_ensemble_size() - 1):
-                optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
-                                           'momentum': 0.9})'''
+
+            # Set optimizer for the trained branches
+            if not args.freeze_trained_branches:
+                for b in range(net.get_ensemble_size() - 1):
+                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
+                                               'momentum': 0.9})
 
         # Finish training after training all branches
         else:
@@ -302,21 +302,25 @@ def main():
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/cbam_set2")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_freeze_base_branch_AffectNet_Discrete")
+    parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
+    parser.add_argument("--num_branches_trained_network", default=9)
+    parser.add_argument("--validation_interval", default=1)
+    parser.add_argument("--max_training_epoch", default=100)
+    parser.add_argument("--max_finetune_epoch", default=30)
+    parser.add_argument("--freeze_trained_branches", default=True)
+    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--gpu_indx", default="0")
+
+    args = parser.parse_args()
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_indx
+
     print("Processing...")
-    main()
+    main(args)
     print("Process has finished!")
 
 
-# todo:
-# this version only adds cbam layers in all the branches and trains all the branches with CE loss. What more we can do:
-"""
-1. Train only one branch with attention and see the result --> 55.9%, loss:1.26
-2. Train 9 branches with attention and see the result --> 59% in branch 8 and similar results as before at earlier branches. 200 epochs first branch and 50 epochs next branches
-3. Freeze the previous layers when start training a new one --> 100 epochs the first branch and 30 the rest 
-4. Add attention to the base as well and train! 
-
-3. Use diversity loss to increase the diversity between the attentions (try both diversity and similarity functions 
-and make it efficient) 
-4. Try also the partition loss 
-5. Visualize the attention values using GradCAM
-"""
