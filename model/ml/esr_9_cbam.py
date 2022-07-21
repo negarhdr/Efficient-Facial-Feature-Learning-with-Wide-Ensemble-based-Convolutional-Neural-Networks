@@ -44,11 +44,11 @@ class Base(nn.Module):
         self.bn3 = nn.BatchNorm2d(128)
         self.bn4 = nn.BatchNorm2d(128)
 
-        # Attention layers
+        '''# Attention layers
         self.cbam1 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam2 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam3 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)'''
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
@@ -56,16 +56,16 @@ class Base(nn.Module):
     def forward(self, x):
         # Convolutional, batch-normalization and pooling layers for representation learning
         x_shared_representations = F.relu(self.bn1(self.conv1(x)))
-        x_shared_representations = self.cbam1(x_shared_representations)
+        # x_shared_representations = self.cbam1(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn2(self.conv2(x_shared_representations))))
-        x_shared_representations = self.cbam2(x_shared_representations)
+        # x_shared_representations = self.cbam2(x_shared_representations)
 
         x_shared_representations = F.relu(self.bn3(self.conv3(x_shared_representations)))
-        x_shared_representations = self.cbam3(x_shared_representations)
+        # x_shared_representations = self.cbam3(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn4(self.conv4(x_shared_representations))))
-        x_shared_representations = self.cbam4(x_shared_representations)
+        # x_shared_representations = self.cbam4(x_shared_representations)
 
         return x_shared_representations
 
