@@ -123,7 +123,7 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch, _ = self.cbam3(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
-        x_conv_branch, attn_mat = self.cbam4(x_conv_branch)
+        x_conv_branch, attn_mat = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
 
         # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
 
@@ -285,6 +285,7 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         affect_values = []
+        heads = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
@@ -294,7 +295,9 @@ class ESR(nn.Module):
             output_emotion, output_affect, attn_mat = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            print('attn_shape', attn_mat.shape)
+            heads.append(attn_mat[:, 0, :, :])
+            attn_heads = torch.stack(heads)
+            print('attn_shape', attn_heads.shape)  # 32x1x6x6 # bsx1xHxW
 
-        return emotions, affect_values #, attn_mat
+        return emotions, affect_values #, attn_heads
 

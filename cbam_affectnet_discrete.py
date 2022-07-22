@@ -118,7 +118,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
-'''class FeatureDiversity(nn.Module):
+class FeatureDiversity(nn.Module):
     def __init__(self, ):
         super(FeatureDiversity, self).__init__()
 
@@ -135,7 +135,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 
         diff = torch.sum(diff, 1)  # batchsize x 512
         div = diff.mean()
-        return torch.log(1 + 1/div)'''
+        return torch.log(1 + 1/div)
 
 
 def main(args):
