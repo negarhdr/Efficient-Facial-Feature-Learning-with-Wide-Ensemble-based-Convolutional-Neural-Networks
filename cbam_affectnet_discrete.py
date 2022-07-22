@@ -42,7 +42,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _ = val_model_eval(inputs_eval)
+        outputs_eval, _, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -121,21 +121,25 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 class FeatureDiversity(nn.Module):
     def __init__(self, ):
         super(FeatureDiversity, self).__init__()
+        self.direct_div = 0
+        self.det_div = 0
+        self.logdet_div = 0
 
-    def forward(self, x):  # batch_size x num_branch x 512
-        num_features = x.size(2)
-        num_branches = x.size(1)
-        diff = 0
-        # diversity between branches
+    def forward(self, x):  # num_branch x batch_size x 6 x 6
+        num_branches = x.size(0)
+        gamma = 10
+        snm = torch.zeros((num_branches, num_branches))
+        # diversity between spatial attention heads
         for i in range(num_branches):
             for j in range(num_branches):
-                diff += torch.square(x[:, i, :] - x[:, j, :])
+                diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2)))  # batch_size
+                diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                snm[i, j] = diff
+        self.direct_div = torch.sum(snm)
+        self.det_div = -1 * torch.det(snm)
+        self.logdet_div = -1 * torch.logdet(snm)
 
-        diff = (1/(2*num_branches*(num_branches-1))) * diff
-
-        diff = torch.sum(diff, 1)  # batchsize x 512
-        div = diff.mean()
-        return torch.log(1 + 1/div)
+        # return self
 
 
 def main(args):
@@ -173,6 +177,7 @@ def main(args):
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
+    diversity = FeatureDiversity()
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,
@@ -223,7 +228,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values = net(inputs)
+                emotions, affect_values, attn_heads = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -232,6 +237,10 @@ def main(args):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
+
+                if net.get_ensemble_size() > 1:
+                    div = diversity(attn_heads).direct_div
+                    loss += div
 
                 # Backward
                 loss.backward()
@@ -325,7 +334,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_direct_div")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
