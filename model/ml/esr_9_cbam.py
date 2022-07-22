@@ -44,11 +44,11 @@ class Base(nn.Module):
         self.bn3 = nn.BatchNorm2d(128)
         self.bn4 = nn.BatchNorm2d(128)
 
-        '''# Attention layers
+        # Attention layers
         self.cbam1 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam2 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam3 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)'''
+        self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
@@ -124,6 +124,8 @@ class ConvolutionalBranch(nn.Module):
 
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
         x_conv_branch = self.cbam4(x_conv_branch)
+
+        print('attn_head_size', x_conv_branch.shape)
 
         # Prepare features for Classification & Regression
         x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1

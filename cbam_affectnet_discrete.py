@@ -118,6 +118,26 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
+'''class FeatureDiversity(nn.Module):
+    def __init__(self, ):
+        super(FeatureDiversity, self).__init__()
+
+    def forward(self, x):  # batch_size x num_branch x 512
+        num_features = x.size(2)
+        num_branches = x.size(1)
+        diff = 0
+        # diversity between branches
+        for i in range(num_branches):
+            for j in range(num_branches):
+                diff += torch.square(x[:, i, :] - x[:, j, :])
+
+        diff = (1/(2*num_branches*(num_branches-1))) * diff
+
+        diff = torch.sum(diff, 1)  # batchsize x 512
+        div = diff.mean()
+        return torch.log(1 + 1/div)'''
+
+
 def main(args):
     # Experimental variables
     max_training_epoch = args.max_training_epoch
@@ -304,8 +324,8 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/cbam_set3")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_branch_AffectNet_Discrete_20")
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
