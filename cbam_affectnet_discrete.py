@@ -139,7 +139,7 @@ class FeatureDiversity(nn.Module):
         self.det_div = -1 * torch.det(snm)
         self.logdet_div = -1 * torch.logdet(snm)
 
-        # return self
+        return self
 
 
 def main(args):
