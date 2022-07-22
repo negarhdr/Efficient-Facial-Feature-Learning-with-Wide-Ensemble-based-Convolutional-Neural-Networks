@@ -297,7 +297,7 @@ class ESR(nn.Module):
             affect_values.append(output_affect)
             heads.append(attn_mat[:, 0, :, :])
         attn_heads = torch.stack(heads) #.permute([1, 0, 2])
-        print('attn_shape', attn_heads.shape)  # batch_size x num_branches x H x W
+        # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
 
         return emotions, affect_values, attn_heads
 
