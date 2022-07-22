@@ -238,7 +238,7 @@ def main(args):
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
 
-                if net.get_ensemble_size() > 1:
+                if net.get_ensemble_size() > 0:
                     div = diversity(attn_heads).direct_div
                     loss += div
 
