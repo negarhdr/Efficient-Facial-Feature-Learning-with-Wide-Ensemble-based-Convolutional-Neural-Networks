@@ -96,7 +96,7 @@ class SpatialGate(nn.Module):
         x_out = self.spatial(x_compress)    # Shape: Nx1xHxW
         # scale = F.sigmoid(x_out)  # broadcasting  # why is it named "broadcasting"? It's not unsqueezing the tensor!
         scale = F.sigmoid(x_out).expand_as(x)  # Edited by me to make scale and x of the same size
-        return x * scale  # Shape: NxCxHxW
+        return x * scale, F.sigmoid(x_out)  # Shape: NxCxHxW
 
 
 # If pool_types = ['avg'], no_spatial=True, then it is SE method
@@ -111,5 +111,5 @@ class CBAM(nn.Module):
     def forward(self, x):
         x_out = self.ChannelGate(x)
         if not self.no_spatial:
-            x_out = self.SpatialGate(x_out)
-        return x_out   # Shape: NxCxHxW
+            x_out, attn_mat = self.SpatialGate(x_out)
+        return x_out, attn_mat  # Shape: NxCxHxW
