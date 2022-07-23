@@ -239,7 +239,7 @@ def main(args):
                     loss += criterion(emotions[i_4], labels)
 
                 if net.get_ensemble_size() > 1:
-                    div = diversity(attn_heads).det_div
+                    div = diversity(attn_heads).logdet_div
                     loss += div
 
                 # Backward
@@ -334,7 +334,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_detdiv")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_logdetdiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
