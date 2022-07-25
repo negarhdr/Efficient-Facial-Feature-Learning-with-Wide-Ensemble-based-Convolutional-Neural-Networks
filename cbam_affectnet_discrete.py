@@ -133,9 +133,10 @@ class FeatureDiversity(nn.Module):
         # diversity between spatial attention heads
         for i in range(num_branches):
             for j in range(num_branches):
-                diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2)))  # batch_size
-                diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
-                snm[i, j] = diff
+                if i != j:
+                    diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2)))  # batch_size
+                    diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                    snm[i, j] = diff
         self.direct_div = torch.sum(snm)
         self.det_div = -1 * torch.det(snm)
         self.logdet_div = -1 * torch.logdet(snm)
@@ -335,16 +336,16 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test")
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test2")
     parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_detdiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
     parser.add_argument("--max_training_epoch", default=50)
-    parser.add_argument("--max_finetune_epoch", default=30)
+    parser.add_argument("--max_finetune_epoch", default=20)
     parser.add_argument("--freeze_trained_branches", default=False)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--gpu_indx", default="0")
+    parser.add_argument("--gpu_indx", default="1")
 
     args = parser.parse_args()
 

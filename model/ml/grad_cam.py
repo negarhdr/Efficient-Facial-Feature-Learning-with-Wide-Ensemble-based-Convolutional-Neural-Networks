@@ -71,22 +71,22 @@ class GradCAM:
         return feature_maps, output_activations
 
     def set_gradients(self, grads):
-        self._gradients.append(grads)
+        self._gradients.append(grads) # this list always has length of 1 because line 59 is called always
 
     def get_mean_gradients(self):
-        # return self._gradients[0].mean(3).mean(2)[0]
-        return self._gradients[0][0]
+        # return self._gradients[0].mean(3).mean(2)[0]  # 512
+        return self._gradients[0][0]  # 512 x 6 x 6
 
     def grad_cam(self, x, list_y):
         list_saliency_maps = []
 
-        for i, y in enumerate(list_y):
+        for i, y in enumerate(list_y):   # i is the number of branches. for each branch the model predicted one label value
             # Set gradients to zero
             self._zero_grad()
 
             # Forward phase
             feature_maps, output_activations = self(x, i)
-            feature_maps = feature_maps[0]
+            feature_maps = feature_maps[0]  # 512x6x6
 
             # Backward the activation of the neuron associated to
             # the predicted emotion to the last convolutional layer
@@ -99,12 +99,12 @@ class GradCAM:
             one_hot.backward(retain_graph=True)
 
             # Get mean gradient for every convolutional filter
-            grad_cam_weights = self.get_mean_gradients()
+            grad_cam_weights = self.get_mean_gradients()    # 512x6x6
 
             # Computes saliency map as a weighted sum of feature maps and mean gradient
-            saliency_map = torch.zeros(feature_maps.size()[1:]).to(self._device)
+            saliency_map = torch.zeros(feature_maps.size()[1:]).to(self._device)  # 512x6x6
             for i, w in enumerate(grad_cam_weights):
-                # saliency_map += w * feature_maps[i, :, :]
+                # saliency_map += w * feature_maps[i, :, :]  # I think this is the true one
                 saliency_map += w * feature_maps[i, :]
 
             # Normalize saliency maps
