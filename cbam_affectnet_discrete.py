@@ -242,7 +242,7 @@ def main(args):
                 if net.get_ensemble_size() > 1:
                     div = diversity(attn_heads).det_div
                     loss += div
-                    print('div', div)
+                    # print('div', div)
 
                 # Backward
                 loss.backward()
