@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_indx
+    # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_indx
 
     print("Processing...")
     main(args)
