@@ -61,7 +61,7 @@ class Base(nn.Module):
         x_shared_representations = F.relu(self.bn1(self.conv1(x)))
         x_shared_representations, _ = self.cbam1(x_shared_representations)
 
-        x_shared_representations = F.relu(self.bn2(self.conv2(x)))
+        x_shared_representations = F.relu(self.bn2(self.conv2(x_shared_representations)))
         x_shared_representations, _ = self.cbam2(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn3(self.conv3(x_shared_representations))))
