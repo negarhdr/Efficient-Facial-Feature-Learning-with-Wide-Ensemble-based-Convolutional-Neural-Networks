@@ -32,8 +32,8 @@ import argparse
 
 # Modules
 from model.utils import udata, umath
-# from model.ml.esr_9_cbam import ESR
-from model.ml.esr_9_cbam_extend import ESR
+from model.ml.esr_9_cbam import ESR
+# from model.ml.esr_9_cbam_extend import ESR
 
 
 def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_process="cpu", current_branch_on_training_val=0):
@@ -336,11 +336,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_detdiv_extend")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_detdiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
-    parser.add_argument("--max_training_epoch", default=60)
+    parser.add_argument("--max_training_epoch", default=50)
     parser.add_argument("--max_finetune_epoch", default=30)
     parser.add_argument("--freeze_trained_branches", default=False)
     parser.add_argument("--device", default="cuda")
