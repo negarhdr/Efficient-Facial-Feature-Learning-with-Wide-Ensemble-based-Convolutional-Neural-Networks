@@ -28,7 +28,7 @@ from os import path, makedirs
 import os
 import argparse
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Modules
 from model.utils import udata, umath
