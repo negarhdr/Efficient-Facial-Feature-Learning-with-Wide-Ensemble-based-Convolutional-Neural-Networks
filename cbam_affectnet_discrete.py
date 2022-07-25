@@ -15,6 +15,8 @@ __email__ = "siqueira.hc@outlook.com"
 __license__ = "MIT license"
 __version__ = "1.0"
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -25,10 +27,7 @@ from PIL import Image
 import numpy as np
 import torch
 from os import path, makedirs
-import os
 import argparse
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Modules
 from model.utils import udata, umath
