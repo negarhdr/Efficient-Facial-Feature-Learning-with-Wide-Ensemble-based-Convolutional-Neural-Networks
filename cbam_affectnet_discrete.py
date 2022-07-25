@@ -239,7 +239,7 @@ def main(args):
                     loss += criterion(emotions[i_4], labels)
 
                 if net.get_ensemble_size() > 1:
-                    div = diversity(attn_heads).logdet_div
+                    div = diversity(attn_heads).det_div
                     loss += div
                     print('div', div)
 
