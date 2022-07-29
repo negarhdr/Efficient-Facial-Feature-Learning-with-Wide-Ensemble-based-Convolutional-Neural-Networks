@@ -156,9 +156,9 @@ def main():
 
     # Set optimizer
     optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
-                           {'params': net.branches[0].parameters(), 'lr': 0.01, 'momentum': 0.9}])
+                           {'params': net.convolutional_branches[0].parameters(), 'lr': 0.01, 'momentum': 0.9}])
     for b in range(1, net.get_ensemble_size()):
-        optimizer.add_param_group({'params': net.branches[b].parameters(), 'lr': 0.001, 'momentum': 0.9})
+        optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.001, 'momentum': 0.9})
 
     # Define criterion
     criterion = nn.MSELoss(reduction='mean')
@@ -290,12 +290,12 @@ def main():
 
             # Set optimizer
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.001, 'momentum': 0.9},
-                                   {'params': net.branches[
+                                   {'params': net.convolutional_branches[
                                        net.get_ensemble_size() - current_branch_on_training].parameters(), 'lr': 0.01,
                                     'momentum': 0.9}])
             for b in range(net.get_ensemble_size()):
                 if b != (net.get_ensemble_size() - current_branch_on_training):
-                    optimizer.add_param_group({'params': net.branches[b].parameters(), 'lr': 0.001, 'momentum': 0.9})
+                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.001, 'momentum': 0.9})
 
             current_branch_on_training -= 1
 
