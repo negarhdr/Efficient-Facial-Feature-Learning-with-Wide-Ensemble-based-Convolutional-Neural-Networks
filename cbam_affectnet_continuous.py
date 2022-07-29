@@ -114,8 +114,8 @@ def plot(his_loss, his_val_loss_valence, his_val_loss_arousal, branch_idx, base_
 
 def main():
     # Experimental variables
-    base_path_experiment = "./experiments/AffectNet_Continuous/paper_results"
-    name_experiment = "ESR_9-AffectNet_Continuous"
+    base_path_experiment = "./experiments/AffectNet_Continuous/CBAM"
+    name_experiment = "ESR_9_base_branch_AffectNet_Continuous_detdiv"
     base_path_to_dataset = "../FER_data/AffectNet"
     num_branches_trained_network = 9
     validation_interval = 1
@@ -142,7 +142,7 @@ def main():
 
     # Load network trained on AffectNet
     net = ESR(device)
-    ESR.load(device, ensemble_size=num_branches_trained_network)
+    ESR.load(device=device, ensemble_size=num_branches_trained_network)
 
     # fix the backbone
     for param in net.parameters():
