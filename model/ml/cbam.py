@@ -80,7 +80,7 @@ class ChannelGate(nn.Module):
             else:
                 channel_att_sum = channel_att_sum + channel_att_raw
 
-        scale = F.sigmoid(channel_att_sum).unsqueeze(2).unsqueeze(3).expand_as(x)
+        scale = torch.sigmoid(channel_att_sum).unsqueeze(2).unsqueeze(3).expand_as(x)
         return x * scale  # Shape of output is NxCxHxW
 
 
@@ -95,8 +95,8 @@ class SpatialGate(nn.Module):
         x_compress = self.compress(x)   # Shape: Nx2xHxW
         x_out = self.spatial(x_compress)    # Shape: Nx1xHxW
         # scale = F.sigmoid(x_out)  # broadcasting  # why is it named "broadcasting"? It's not unsqueezing the tensor!
-        scale = F.sigmoid(x_out).expand_as(x)  # Edited by me to make scale and x of the same size
-        return x * scale, F.sigmoid(x_out)  # Shape: NxCxHxW
+        scale = torch.sigmoid(x_out).expand_as(x)  # Edited by me to make scale and x of the same size
+        return x * scale, torch.sigmoid(x_out)  # Shape: NxCxHxW
 
 
 # If pool_types = ['avg'], no_spatial=True, then it is SE method

@@ -159,13 +159,13 @@ class ConvolutionalBranch(nn.Module):
 
         # Convolutional, batch-normalization and pooling layers
         x_to_last_conv_layer = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        x_to_last_conv_layer = self.cbam1(x_to_last_conv_layer)
+        x_to_last_conv_layer, _ = self.cbam1(x_to_last_conv_layer)
         x_to_last_conv_layer = self.pool(F.relu(self.bn2(self.conv2(x_to_last_conv_layer))))
-        x_to_last_conv_layer = self.cbam2(x_to_last_conv_layer)
+        x_to_last_conv_layer, _ = self.cbam2(x_to_last_conv_layer)
         x_to_last_conv_layer = F.relu(self.bn3(self.conv3(x_to_last_conv_layer)))
-        x_to_last_conv_layer = self.cbam3(x_to_last_conv_layer)
+        x_to_last_conv_layer, _ = self.cbam3(x_to_last_conv_layer)
         x_to_last_conv_layer = F.relu(self.bn4(self.conv4(x_to_last_conv_layer)))
-        x_to_last_conv_layer = self.cbam4(x_to_last_conv_layer)
+        x_to_last_conv_layer, _ = self.cbam4(x_to_last_conv_layer)
 
         # Feature maps of the last convolutional layer
         return x_to_last_conv_layer
@@ -207,7 +207,7 @@ class ESR(nn.Module):
     INPUT_IMAGE_NORMALIZATION_MEAN = [0.0, 0.0, 0.0]
     INPUT_IMAGE_NORMALIZATION_STD = [1.0, 1.0, 1.0]
     # Path to saved network
-    PATH_TO_SAVED_NETWORK = "./model/ml/trained_models/esr_9"
+    PATH_TO_SAVED_NETWORK = "./model/ml/trained_models/esr_9_cbam"
     FILE_NAME_BASE_NETWORK = "Net-Base-Shared_Representations.pt"
     FILE_NAME_CONV_BRANCH = "Net-Branch_{}.pt"
 
@@ -267,6 +267,19 @@ class ESR(nn.Module):
 
         for b_td in self.convolutional_branches:
             b_td.to(device_to_process)
+
+    def load(self, device, ensemble_size=9):
+        # load base
+        self.base.load_state_dict(torch.load(path.join(ESR.PATH_TO_SAVED_NETWORK, ESR.FILE_NAME_BASE_NETWORK),
+                                             map_location=device))
+        self.base.to(device)
+        # load branches
+        for i in range(1, ensemble_size + 1):
+            self.convolutional_branches.append(ConvolutionalBranch())
+            self.convolutional_branches[-1].load_state_dict(torch.load(
+                path.join(ESR.PATH_TO_SAVED_NETWORK, ESR.FILE_NAME_CONV_BRANCH.format(i)), map_location=device))
+            self.convolutional_branches[-1].to(device)
+        self.to(device)
 
     def reload(self, best_configuration):
         self.base.load_state_dict(best_configuration[0])

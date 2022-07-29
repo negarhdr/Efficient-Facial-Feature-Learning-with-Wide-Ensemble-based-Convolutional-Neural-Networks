@@ -118,9 +118,9 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
-class FeatureDiversity(nn.Module):
+class BranchDiversity(nn.Module):
     def __init__(self, ):
-        super(FeatureDiversity, self).__init__()
+        super(BranchDiversity, self).__init__()
         self.direct_div = 0
         self.det_div = 0
         self.logdet_div = 0
@@ -129,13 +129,42 @@ class FeatureDiversity(nn.Module):
         num_branches = x.size(0)
         gamma = 10
         snm = torch.zeros((num_branches, num_branches))
+
         # diversity between spatial attention heads
         for i in range(num_branches):
             for j in range(num_branches):
                 if i != j:
-                    diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2)))  # batch_size
+                    diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
                     diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
                     snm[i, j] = diff
+        self.direct_div = torch.sum(snm)
+        self.det_div = -1 * torch.det(snm)
+        self.logdet_div = -1 * torch.logdet(snm)
+
+        return self
+
+class PixelDiversity(nn.Module):
+    def __init__(self, ):
+        super(PixelDiversity, self).__init__()
+        self.direct_div = 0
+        self.det_div = 0
+        self.logdet_div = 0
+
+    def forward(self, x):  # num_branch x batch_size x 6 x 6
+        # diversity between pixels in each branch
+        num_branches = x.size(0)
+        gamma = 10
+        H = x.size(2)
+        W = x.size(3)
+        snm = torch.zeros((H, W))
+        for k in range(num_branches):
+            for i in range(H):
+                for j in range(W):
+                    if i != j:
+                        diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[k, :, i, j] - x[k, :, i, j]),
+                                                                (1, 2)))  # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] += diff
         self.direct_div = torch.sum(snm)
         self.det_div = -1 * torch.det(snm)
         self.logdet_div = -1 * torch.logdet(snm)
@@ -178,7 +207,7 @@ def main(args):
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
-    diversity = FeatureDiversity()
+    diversity = BranchDiversity()
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,

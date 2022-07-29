@@ -21,7 +21,8 @@ import dlib
 # Modules
 from model.ml.fer import FER
 from model.utils import uimage, udata
-from model.ml.esr_9 import ESR
+#from model.ml.esr_9 import ESR
+from model.ml.esr_9_cbam import ESR     # I changed this
 from model.ml.grad_cam import GradCAM
 
 
@@ -224,13 +225,15 @@ def _predict(input_face, device):
 
     if _ESR_9 is None:
         _ESR_9 = ESR(device)
+        _ESR_9.load(device)
 
     to_return_emotion = []
     to_return_emotion_idx = []
     to_return_affect = None
 
     # Recognizes facial expression
-    emotion, affect = _ESR_9(input_face)
+    #emotion, affect = _ESR_9(input_face)
+    emotion, affect, attn_heads = _ESR_9(input_face)
 
     # Computes ensemble prediction for affect
     # Converts from Tensor to ndarray

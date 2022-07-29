@@ -16,11 +16,11 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+
 # External Libraries
 from torch.utils.data import DataLoader
 from torchvision import transforms
-import torch.nn.functional as F
 import torch.optim as optim
 import torch.nn as nn
 from PIL import Image
@@ -33,195 +33,7 @@ import copy
 
 # Modules
 from model.utils import udata, umath
-from model.ml.esr_9 import ESR
-
-
-class Base(nn.Module):
-    def __init__(self):
-        super(Base, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, 5, 1)
-        self.conv2 = nn.Conv2d(64, 128, 3, 1)
-        self.conv3 = nn.Conv2d(128, 128, 3, 1)
-        self.conv4 = nn.Conv2d(128, 128, 3, 1)
-
-        self.bn1 = nn.BatchNorm2d(64)
-        self.bn2 = nn.BatchNorm2d(128)
-        self.bn3 = nn.BatchNorm2d(128)
-        self.bn4 = nn.BatchNorm2d(128)
-
-        self.pool = nn.MaxPool2d(2, 2)
-
-    def forward(self, x_base_to_process):
-        x_base = F.relu(self.bn1(self.conv1(x_base_to_process)))
-        x_base = self.pool(F.relu(self.bn2(self.conv2(x_base))))
-        x_base = F.relu(self.bn3(self.conv3(x_base)))
-        x_base = self.pool(F.relu(self.bn4(self.conv4(x_base))))
-
-        return x_base
-
-
-class Branch(nn.Module):
-    def __init__(self):
-        super(Branch, self).__init__()
-
-        self.conv1 = nn.Conv2d(128, 128, 3, 1)
-        self.conv2 = nn.Conv2d(128, 256, 3, 1)
-        self.conv3 = nn.Conv2d(256, 256, 3, 1)
-        self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)       # what is the 5th dimension?
-
-        self.bn1 = nn.BatchNorm2d(128)
-        self.bn2 = nn.BatchNorm2d(256)
-        self.bn3 = nn.BatchNorm2d(256)
-        self.bn4 = nn.BatchNorm2d(512)
-
-        self.fc = nn.Linear(512, 8)     # this is for discrete emotion recognition
-
-        self.fc_dimensional = nn.Linear(8, 2)   # this is for valence-arousal estimation
-
-        self.pool = nn.MaxPool2d(2, 2)
-        self.global_pool = nn.AdaptiveAvgPool2d(1)
-
-    def forward(self, x_branch_to_process):
-        x_branch = F.relu(self.bn1(self.conv1(x_branch_to_process)))
-        x_branch = self.pool(F.relu(self.bn2(self.conv2(x_branch))))
-        x_branch = F.relu(self.bn3(self.conv3(x_branch)))
-        x_branch = self.global_pool(F.relu(self.bn4(self.conv4(x_branch))))
-        x_branch = x_branch.view(-1, 512)
-        x_branch = self.fc(x_branch)
-
-        x_branch = F.relu(x_branch)  # I added this, because we have it in esr_9, and also in paper but not here!
-        x_branch = self.fc_dimensional(x_branch)
-
-        return x_branch
-
-
-class Ensemble(nn.Module):
-    def __init__(self):
-        super(Ensemble, self).__init__()
-
-        self.base = Base()
-        self.branches = []
-
-    def get_ensemble_size(self):
-        return len(self.branches)
-
-    def add_branch(self):
-        self.branches.append(Branch())
-
-    def forward(self, x):
-        x_ensemble = self.base(x)
-
-        y = []
-        for branch in self.branches:
-            y.append(branch(x_ensemble))
-
-        return y
-
-    @staticmethod
-    def save(state_dicts, base_path_to_save_model, current_branch_save):    # here it makes different folders. it makes 9 folders because it trains 9 branches (train is performed 9 times) and each time it saves the parameters of all the branches
-        if not path.isdir(path.join(base_path_to_save_model, str(len(state_dicts) - 1 - current_branch_save))):
-            makedirs(path.join(base_path_to_save_model, str(len(state_dicts) - 1 - current_branch_save)))
-
-        torch.save(state_dicts[0],
-                   path.join(base_path_to_save_model,
-                             str(len(state_dicts) - 1 - current_branch_save),
-                             "Net-Base-Shared_Representations.pt"))
-
-        for i in range(1, len(state_dicts)):
-            torch.save(state_dicts[i],
-                       path.join(base_path_to_save_model,
-                                 str(len(state_dicts) - 1 - current_branch_save),
-                                 "Net-Branch_{}.pt".format(i)))
-
-        print("Network has been "
-              "saved at: {}".format(path.join(base_path_to_save_model,
-                                              str(len(state_dicts) - 1 - current_branch_save))))
-
-    @staticmethod
-    def load(device_to_load, ensemble_size):
-        # Load ESR-9
-        esr_9 = ESR(device_to_load)     # its constructor makes a model with a base and 9 branches and loads the pretrained weights for them
-        loaded_model = Ensemble()
-        loaded_model.branches = []
-
-        # Load the base of the network
-        loaded_model.base = esr_9.base  # it the base arch with pre-trained weights loaded
-
-        # Base no trainable
-        for p in loaded_model.base.conv1.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.conv2.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.conv3.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.conv4.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.bn1.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.bn2.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.bn3.parameters():
-            p.requires_grad = False
-        for p in loaded_model.base.bn4.parameters():
-            p.requires_grad = False
-
-        # Load branches
-        for i in range(ensemble_size):
-            loaded_model_branch = Branch()
-            loaded_model_branch.conv1 = esr_9.convolutional_branches[i].conv1
-            loaded_model_branch.conv2 = esr_9.convolutional_branches[i].conv2
-            loaded_model_branch.conv3 = esr_9.convolutional_branches[i].conv3
-            loaded_model_branch.conv4 = esr_9.convolutional_branches[i].conv4
-            loaded_model_branch.bn1 = esr_9.convolutional_branches[i].bn1
-            loaded_model_branch.bn2 = esr_9.convolutional_branches[i].bn2
-            loaded_model_branch.bn3 = esr_9.convolutional_branches[i].bn3
-            loaded_model_branch.bn4 = esr_9.convolutional_branches[i].bn4
-            loaded_model_branch.fc = esr_9.convolutional_branches[i].fc
-
-            # Branch no trainable, but last layer
-            for p in loaded_model_branch.conv1.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.conv2.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.conv3.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.conv4.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.bn1.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.bn2.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.bn3.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.bn4.parameters():
-                p.requires_grad = False
-            for p in loaded_model_branch.fc.parameters():
-                p.requires_grad = False
-
-            loaded_model.branches.append(loaded_model_branch)
-
-        return loaded_model
-
-    def to_state_dict(self):
-        state_dicts = [copy.deepcopy(self.base.state_dict())]
-
-        for b in self.branches:
-            state_dicts.append(copy.deepcopy(b.state_dict()))
-
-        return state_dicts
-
-    def to_device(self, device_to_process="cpu"):
-        self.to(device_to_process)
-        self.base.to(device_to_process)
-
-        for b_td in self.branches:
-            b_td.to(device_to_process)
-
-    def reload(self, best_configuration):
-        self.base.load_state_dict(best_configuration[0])
-
-        for i in range(self.get_ensemble_size()):
-            self.branches[i].load_state_dict(best_configuration[i + 1])
+from model.ml.esr_9_cbam import ESR
 
 
 def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_process, current_branch_on_training_val=0):
@@ -235,8 +47,8 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
         labels_eval_valence = labels_eval[:, 0].view(len(labels_eval[:, 0]), 1)
         labels_eval_arousal = labels_eval[:, 1].view(len(labels_eval[:, 1]), 1)
 
-        outputs_eval = val_model_eval(inputs_eval)  # 9 lists of size n*2 each
-        outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]  # only keep the output of branches which have been training
+        emotions, affect_values, attn_heads = val_model_eval(inputs_eval)  # 9 lists of size n*2 each
+        outputs_eval = affect_values[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]  # only keep the output of branches which have been training
 
         # Ensemble prediction
         val_predictions_ensemble = torch.zeros(outputs_eval[0].size()).to(cpu_device)  # size is n*2 (size of one of the lists)
@@ -329,7 +141,15 @@ def main():
     print("Running on {}".format(device))
 
     # Load network trained on AffectNet
-    net = Ensemble.load(device, num_branches_trained_network)
+    net = ESR(device)
+    ESR.load(device, ensemble_size=num_branches_trained_network)
+
+    # fix the backbone
+    for param in net.parameters():
+        param.requires_grad = False
+    for i in range(net.get_ensemble_size()):
+        for p in net.convolutional_branches[i].fc_dimensional.parameters():
+            p.requires_grad = True
 
     # Send params to device
     net.to_device(device)
@@ -389,13 +209,13 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                outputs = net(inputs)   # a list of 9 (ensemble_size) output arrays (9 * n*2), one array for each branch
+                emotions, affect_values, attn_heads = net(inputs)   # a list of 9 (ensemble_size) output arrays (9 * n*2), one array for each branch
 
                 # Compute loss
                 loss = 0.0
                 for i_4 in range(net.get_ensemble_size() - current_branch_on_training):
-                    out_valence = outputs[i_4][:, 0].view(len(outputs[i_4][:, 0]), 1)
-                    out_arousal = outputs[i_4][:, 1].view(len(outputs[i_4][:, 1]), 1)
+                    out_valence = affect_values[i_4][:, 0].view(len(affect_values[i_4][:, 0]), 1)
+                    out_arousal = affect_values[i_4][:, 1].view(len(affect_values[i_4][:, 1]), 1)
 
                     loss += torch.sqrt(criterion(out_valence, labels_valence))
                     loss += torch.sqrt(criterion(out_arousal, labels_arousal))
@@ -447,8 +267,8 @@ def main():
                     best_ensemble = net.to_state_dict()
 
                     # Save network
-                    Ensemble.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'Saved Networks'),
-                                  current_branch_on_training)
+                    ESR.save(best_ensemble, path.join(base_path_experiment, name_experiment, 'Saved Networks'),
+                             current_branch_on_training)
 
                 # Save graphs
                 plot(history_loss, history_val_loss_valence, history_val_loss_arousal,

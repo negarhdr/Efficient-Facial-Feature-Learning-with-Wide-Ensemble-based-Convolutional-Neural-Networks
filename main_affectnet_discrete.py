@@ -16,6 +16,9 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 # External Libraries
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -27,12 +30,9 @@ import numpy as np
 import torch
 from os import path, makedirs
 import copy
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Modules
 from model.utils import udata, umath
-
 
 
 class Base(nn.Module):
@@ -237,7 +237,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 
 def main():
     # Experimental variables
-    base_path_experiment = "./experiments/AffectNet_Discrete/"
+    base_path_experiment = "./experiments/AffectNet_Discrete/paper_results"
     name_experiment = "Main_ESR_9_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
     num_branches_trained_network = 9

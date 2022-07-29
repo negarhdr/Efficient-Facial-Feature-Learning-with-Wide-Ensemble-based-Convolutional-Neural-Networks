@@ -13,7 +13,7 @@ Video: recognizes facial expressions in videos in a frame-based approach.
 Webcam: connects to a webcam and recognizes facial expressions of the closest face detected
 by a face detection algorithm.
 """
-
+# display_graph_ensemble was set to (not no_plot) and I changed it to False because there was an error in draw_graph that I couldn't fix
 __author__ = "Henrique Siqueira"
 __email__ = "siqueira.hc@outlook.com"
 __license__ = "MIT license"
@@ -51,7 +51,7 @@ def webcam(camera_id, display, gradcam, output_csv_file, screen_size, device, fr
     if display:
         fer_demo = FERDemo(screen_size=screen_size,
                            display_individual_classification=branch,
-                           display_graph_ensemble=(not no_plot))
+                           display_graph_ensemble=False)
     else:
         print("Press 'Ctrl + C' to quit.")
 
@@ -138,7 +138,7 @@ def video(input_video_path, display, gradcam, output_csv_file, screen_size,
     if display:
         fer_demo = FERDemo(screen_size=screen_size,
                            display_individual_classification=branch,
-                           display_graph_ensemble=(not no_plot))
+                           display_graph_ensemble=False)
 
     try:
         if write_to_file:
@@ -198,7 +198,7 @@ def main():
                         type=str)
     parser.add_argument("-s", "--size",
                         help="define the size of the window: \n1 - 1920 x 1080;\n2 - 1440 x 900;\n3 - 1024 x 768.",
-                        type=int, choices=[1, 2, 3], default=1)
+                        type=int, choices=[1, 2, 3], default=3)
     parser.add_argument("-c", "--cuda", help="run on GPU.",
                         action="store_true")
     parser.add_argument("-w", "--webcam_id",
