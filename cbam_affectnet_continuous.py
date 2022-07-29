@@ -142,7 +142,7 @@ def main():
 
     # Load network trained on AffectNet
     net = ESR(device)
-    ESR.load(device=device, ensemble_size=num_branches_trained_network)
+    net.load(device=device, ensemble_size=num_branches_trained_network)
 
     # fix the backbone
     for param in net.parameters():
