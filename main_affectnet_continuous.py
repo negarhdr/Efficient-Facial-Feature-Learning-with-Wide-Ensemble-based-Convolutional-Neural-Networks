@@ -17,6 +17,7 @@ __version__ = "1.0"
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 # External Libraries
 from torch.utils.data import DataLoader
 from torchvision import transforms
