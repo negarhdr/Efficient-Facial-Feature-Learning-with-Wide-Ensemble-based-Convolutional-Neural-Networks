@@ -21,7 +21,8 @@ from matplotlib import pyplot as plt
 
 
 def plot(data, title='Figure', legends=None, axis_x=None, axis_y=None, file_path=None, file_name=None,
-         figure_size=(16, 9), has_grid=True, limits_axis_y=None, upper_lower_data=None, limits_axis_x=None):
+         figure_size=(16, 9), has_grid=True, limits_axis_y=None, upper_lower_data=None,
+         limits_axis_x=(0, 20, 1)):
     """
     Plot a graph from a list of x and y values.
 
@@ -107,7 +108,7 @@ def plot(data, title='Figure', legends=None, axis_x=None, axis_y=None, file_path
         plt.xlim(limits_axis_x[:2])
         plt.xticks(np.arange(limits_axis_x[0], limits_axis_x[1] + limits_axis_x[2], limits_axis_x[2]))
 
-    if (file_name is None) or (file_path is None):
+    '''if (file_name is None) or (file_path is None):
         plt.show()
     else:
         full_path = path.join(file_path, file_name)
@@ -115,4 +116,7 @@ def plot(data, title='Figure', legends=None, axis_x=None, axis_y=None, file_path
             makedirs(file_path)
         plt.savefig(full_path, format='svg')
         plt.close()
-        print('Figure saved at %s successfully.' % full_path)
+        print('Figure saved at %s successfully.' % full_path)'''
+
+    plt.show()  # I added this
+
