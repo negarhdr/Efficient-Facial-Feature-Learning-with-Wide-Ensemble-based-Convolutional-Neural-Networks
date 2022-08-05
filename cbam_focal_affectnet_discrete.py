@@ -214,8 +214,8 @@ def main(args):
                            {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
 
     # Define criterion
-    # criterion = nn.CrossEntropyLoss()
-    criterion = focal_loss()
+    criterion = nn.CrossEntropyLoss()
+    # criterion = focal_loss()
     diversity = BranchDiversity()
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
