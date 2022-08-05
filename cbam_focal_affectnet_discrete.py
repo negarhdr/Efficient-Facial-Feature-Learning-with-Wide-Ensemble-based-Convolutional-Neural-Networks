@@ -277,10 +277,10 @@ def main(args):
                     # loss += criterion(emotions[i_4], labels)
                     loss += focal_loss(emotions[i_4], labels)
 
-                '''if net.get_ensemble_size() > 1:
+                if net.get_ensemble_size() > 1:
                     div = diversity(attn_heads).det_div
                     loss += div
-                    # print('div', div)'''
+                    # print('div', div)
 
                 # Backward
                 loss.backward()
