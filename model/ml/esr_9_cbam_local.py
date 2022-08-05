@@ -106,33 +106,61 @@ class ConvolutionalBranch(nn.Module):
         self.fc_dimensional = nn.Linear(8, 2)
 
         # Max-pooling layer
-        self.pool = nn.MaxPool2d(2, 2)
+        # self.pool = nn.MaxPool2d(2, 2)
 
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-    def forward(self, x_shared_representations):
+    def forward(self, patch_11, patch_12, patch_21, patch_22):
         # Convolutional, batch-normalization and pooling layers
-        x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        print('bl1_shape', x_conv_branch.shape)
-        x_conv_branch, _ = self.cbam1(x_conv_branch)
+        # patch_11
+        x_conv_branch_p11 = F.relu(self.bn1(self.conv1(patch_11)))  # 32x128x8x8
+        x_conv_branch_p11, _ = self.cbam1(x_conv_branch_p11)
+        x_conv_branch_p11 = F.relu(self.bn2(self.conv2(x_conv_branch_p11)))  # 32x256x6x6
+        x_conv_branch_p11, _ = self.cbam2(x_conv_branch_p11)
+        x_conv_branch_p11 = F.relu(self.bn3(self.conv3(x_conv_branch_p11)))  # 32x256x4x4
+        x_conv_branch_p11, _ = self.cbam3(x_conv_branch_p11)
+        x_conv_branch_p11 = F.relu(self.bn4(self.conv4(x_conv_branch_p11)))   # 32x512x4x4
+        x_conv_branch_p11, attn_mat_p11 = self.cbam4(x_conv_branch_p11)  # attn_mat of size 32x1x4x4
+        # patch_12
+        x_conv_branch_p12 = F.relu(self.bn1(self.conv1(patch_12)))  # 32x128x8x8
+        x_conv_branch_p12, _ = self.cbam1(x_conv_branch_p12)
+        x_conv_branch_p12 = F.relu(self.bn2(self.conv2(x_conv_branch_p12)))  # 32x256x6x6
+        x_conv_branch_p12, _ = self.cbam2(x_conv_branch_p12)
+        x_conv_branch_p12 = F.relu(self.bn3(self.conv3(x_conv_branch_p12)))  # 32x256x4x4
+        x_conv_branch_p12, _ = self.cbam3(x_conv_branch_p12)
+        x_conv_branch_p12 = F.relu(self.bn4(self.conv4(x_conv_branch_p12)))  # 32x512x4x4
+        x_conv_branch_p12, attn_mat_p12 = self.cbam4(x_conv_branch_p12)  # attn_mat of size 32x1x4x4
+        # patch_21
+        x_conv_branch_p21 = F.relu(self.bn1(self.conv1(patch_21)))  # 32x128x8x8
+        x_conv_branch_p21, _ = self.cbam1(x_conv_branch_p21)
+        x_conv_branch_p21 = F.relu(self.bn2(self.conv2(x_conv_branch_p21)))  # 32x256x6x6
+        x_conv_branch_p21, _ = self.cbam2(x_conv_branch_p21)
+        x_conv_branch_p21 = F.relu(self.bn3(self.conv3(x_conv_branch_p21)))  # 32x256x4x4
+        x_conv_branch_p21, _ = self.cbam3(x_conv_branch_p21)
+        x_conv_branch_p21 = F.relu(self.bn4(self.conv4(x_conv_branch_p21)))  # 32x512x4x4
+        x_conv_branch_p21, attn_mat_p21 = self.cbam4(x_conv_branch_p21)  # attn_mat of size 32x1x4x4
+        # patch_22
+        x_conv_branch_p22 = F.relu(self.bn1(self.conv1(patch_22)))  # 32x128x8x8
+        x_conv_branch_p22, _ = self.cbam1(x_conv_branch_p22)
+        x_conv_branch_p22 = F.relu(self.bn2(self.conv2(x_conv_branch_p22)))  # 32x256x6x6
+        x_conv_branch_p22, _ = self.cbam2(x_conv_branch_p22)
+        x_conv_branch_p22 = F.relu(self.bn3(self.conv3(x_conv_branch_p22)))  # 32x256x4x4
+        x_conv_branch_p22, _ = self.cbam3(x_conv_branch_p22)
+        x_conv_branch_p22 = F.relu(self.bn4(self.conv4(x_conv_branch_p22)))  # 32x512x4x4
+        x_conv_branch_p22, attn_mat_p22 = self.cbam4(x_conv_branch_p22)  # attn_mat of size 32x1x4x4
 
-        x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
-        print('bl2_shape', x_conv_branch.shape)
-        x_conv_branch, _ = self.cbam2(x_conv_branch)
+        x_conv_out_1 = torch.cat([x_conv_branch_p11, x_conv_branch_p11], dim=3)
+        x_conv_out_2 = torch.cat([x_conv_branch_p21, x_conv_branch_p22], dim=3)
+        x_conv_out = torch.cat([x_conv_out_1, x_conv_out_2], dim=2)
 
-        x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
-        print('bl3_shape', x_conv_branch.shape)
-        x_conv_branch, _ = self.cbam3(x_conv_branch)
+        attn_mat_1 = torch.cat([attn_mat_p11, attn_mat_p12], dim=3)
+        attn_mat_2 = torch.cat([attn_mat_p21, attn_mat_p22], dim=3)
+        attn_mat_out = torch.cat([attn_mat_1, attn_mat_2], dim=2)
 
-        x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
-        print('bl4_shape', x_conv_branch.shape)
-        x_conv_branch, attn_mat = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
-
-        # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
 
         # Prepare features for Classification & Regression
-        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
+        x_conv_branch = self.global_pool(x_conv_out)  # N x 512 x 1 x 1
         x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
 
         # Fully connected layer for expression recognition
@@ -145,7 +173,7 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_mat
+        return discrete_emotion, continuous_affect, attn_mat_out
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -305,15 +333,20 @@ class ESR(nn.Module):
         heads = []
 
         # Get shared representations
-        x_shared_representations = self.base(x)
+        x_shared_representations = self.base(x)  # 32x128x20x20
+
+        patch_11 = x_shared_representations[:, :, 0:10, 0:10]
+        patch_12 = x_shared_representations[:, :, 0:10, 10:20]
+        patch_21 = x_shared_representations[:, :, 10:20, 0:10]
+        patch_22 = x_shared_representations[:, :, 10:20, 10:20]
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(x_shared_representations)
+            output_emotion, output_affect, attn_mat = branch(patch_11, patch_12, patch_21, patch_22)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
             heads.append(attn_mat[:, 0, :, :])
-        attn_heads = torch.stack(heads) #.permute([1, 0, 2])
+        attn_heads = torch.stack(heads)  #.permute([1, 0, 2])
         # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
 
         return emotions, affect_values, attn_heads

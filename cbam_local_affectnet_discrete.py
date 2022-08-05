@@ -32,7 +32,6 @@ import argparse
 # Modules
 from model.utils import udata, umath
 from model.ml.esr_9_cbam_local import ESR
-# from model.ml.esr_9_cbam_extend import ESR
 
 
 def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_process="cpu", current_branch_on_training_val=0):
@@ -172,6 +171,14 @@ class PixelDiversity(nn.Module):
         return self
 
 
+def focal_loss(input_tensor, target_tensor, weight=None, gamma=2, reduction='mean'):
+    log_prob = torch.nn.functional.log_softmax(input_tensor, dim=-1)
+    probs = torch.exp(log_prob)
+    balance_factor = 1  # try with and without balance factor
+    return torch.nn.functional.nll_loss((balance_factor * (1 - probs) ** gamma) * log_prob,
+                                        target_tensor, weight=weight, reduction=reduction)
+
+
 def main(args):
     # Experimental variables
     max_training_epoch = args.max_training_epoch
@@ -268,10 +275,10 @@ def main(args):
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion(emotions[i_4], labels)
 
-                if net.get_ensemble_size() > 1:
+                '''if net.get_ensemble_size() > 1:
                     div = diversity(attn_heads).det_div
                     loss += div
-                    # print('div', div)
+                    # print('div', div)'''
 
                 # Backward
                 loss.backward()
