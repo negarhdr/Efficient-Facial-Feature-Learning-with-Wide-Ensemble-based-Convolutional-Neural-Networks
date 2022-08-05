@@ -67,8 +67,7 @@ class Base(nn.Module):
         x_shared_representations = self.pool(F.relu(self.bn4(self.conv4(x_shared_representations))))
         x_shared_representations, _ = self.cbam4(x_shared_representations)
 
-        print('base_fshape', x_shared_representations.shape)
-        return x_shared_representations
+        return x_shared_representations  # 32x128x20x20
 
 
 class ConvolutionalBranch(nn.Module):
@@ -115,15 +114,19 @@ class ConvolutionalBranch(nn.Module):
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
         x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
+        print('bl1_shape', x_conv_branch.shape)
         x_conv_branch, _ = self.cbam1(x_conv_branch)
 
         x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
+        print('bl2_shape', x_conv_branch.shape)
         x_conv_branch, _ = self.cbam2(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
+        print('bl3_shape', x_conv_branch.shape)
         x_conv_branch, _ = self.cbam3(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
+        print('bl4_shape', x_conv_branch.shape)
         x_conv_branch, attn_mat = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
 
         # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
