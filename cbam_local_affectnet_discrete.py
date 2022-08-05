@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -174,7 +174,7 @@ class PixelDiversity(nn.Module):
 def focal_loss(input_tensor, target_tensor, weight=None, gamma=2, reduction='mean'):
     log_prob = torch.nn.functional.log_softmax(input_tensor, dim=-1)
     probs = torch.exp(log_prob)
-    balance_factor = 1  # try with and without balance factor
+    balance_factor = 0.25  # try with and without balance factor
     return torch.nn.functional.nll_loss((balance_factor * (1 - probs) ** gamma) * log_prob,
                                         target_tensor, weight=weight, reduction=reduction)
 
@@ -273,7 +273,8 @@ def main(args):
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)
+                    # loss += criterion(emotions[i_4], labels)
+                    loss += focal_loss(emotions[i_4], labels)
 
                 '''if net.get_ensemble_size() > 1:
                     div = diversity(attn_heads).det_div
@@ -372,7 +373,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local_wofocal_wodiv")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local_focal_wodiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
