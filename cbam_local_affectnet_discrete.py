@@ -372,7 +372,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local_wofocal_wodiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
