@@ -146,6 +146,23 @@ class ConvolutionalBranch(nn.Module):
         self.cbam43 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam44 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
 
+        ########### Global ############
+        self.conv1 = nn.Conv2d(128, 128, 3, 1)
+        self.conv2 = nn.Conv2d(128, 256, 3, 1)
+        self.conv3 = nn.Conv2d(256, 256, 3, 1)
+        self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)
+
+        self.bn1 = nn.BatchNorm2d(128)
+        self.bn2 = nn.BatchNorm2d(256)
+        self.bn3 = nn.BatchNorm2d(256)
+        self.bn4 = nn.BatchNorm2d(512)
+        self.bn5 = nn.BatchNorm2d(512)
+
+        self.cbam1 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam2 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam3 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam4 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc = nn.Linear(512, 8)
 
@@ -153,12 +170,12 @@ class ConvolutionalBranch(nn.Module):
         self.fc_dimensional = nn.Linear(8, 2)
 
         # Max-pooling layer
-        # self.pool = nn.MaxPool2d(2, 2)
+        self.pool = nn.MaxPool2d(2, 2)
 
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-    def forward(self, patch_11, patch_12, patch_21, patch_22):
+    def forward(self, x, patch_11, patch_12, patch_21, patch_22):
         # Convolutional, batch-normalization and pooling layers
         # patch_11
         x_conv_branch_p11 = F.relu(self.bn11(self.conv11(patch_11)))  # 32x128x8x8
@@ -205,8 +222,22 @@ class ConvolutionalBranch(nn.Module):
         attn_mat_2 = torch.cat([attn_mat_p21, attn_mat_p22], dim=3)
         attn_mat_out = torch.cat([attn_mat_1, attn_mat_2], dim=2)
 
+        # Global
+        # patch_11
+        x_conv_global = F.relu(self.bn1(self.conv1(x)))
+        x_conv_global, _ = self.cbam1(x_conv_global)
+        x_conv_global = self.pool(F.relu(self.bn2(self.conv2(x_conv_global))))
+        x_conv_global, _ = self.cbam2(x_conv_global)
+        x_conv_global = F.relu(self.bn3(self.conv3(x_conv_global)))
+        x_conv_global, _ = self.cbam3(x_conv_global)
+        x_conv_global = F.relu(self.bn4(self.conv4(x_conv_global)))
+        x_conv_global, attn_mat = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
+
+        # x_conv_branch = self.self.bn5(x_conv_out + x_conv_global) # check if residual block needs relu and bn?
+        x_conv_branch = x_conv_out + x_conv_global
+
         # Prepare features for Classification & Regression
-        x_conv_branch = self.global_pool(x_conv_out)  # N x 512 x 1 x 1
+        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
         x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
 
         # Fully connected layer for expression recognition
@@ -388,7 +419,7 @@ class ESR(nn.Module):
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(patch_11, patch_12, patch_21, patch_22)
+            output_emotion, output_affect, attn_mat = branch(x_shared_representations, patch_11, patch_12, patch_21, patch_22)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
             heads.append(attn_mat[:, 0, :, :])
