@@ -273,13 +273,13 @@ def main(args):
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    # loss += criterion(emotions[i_4], labels)
-                    loss += focal_loss(emotions[i_4], labels)
+                    loss += criterion(emotions[i_4], labels)
+                    # loss += focal_loss(emotions[i_4], labels)
 
-                '''if net.get_ensemble_size() > 1:
+                if net.get_ensemble_size() > 1:
                     div = diversity(attn_heads).det_div
                     loss += div
-                    # print('div', div)'''
+                    # print('div', div)
 
                 # Backward
                 loss.backward()
@@ -373,7 +373,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local_focal_wodiv")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local_wofocal_detdiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
