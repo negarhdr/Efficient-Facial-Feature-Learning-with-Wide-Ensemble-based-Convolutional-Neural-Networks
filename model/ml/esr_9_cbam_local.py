@@ -149,7 +149,7 @@ class ConvolutionalBranch(nn.Module):
         ########### Global ############
         self.conv1 = nn.Conv2d(128, 128, 3, 1)
         self.conv2 = nn.Conv2d(128, 256, 3, 1)
-        self.conv3 = nn.Conv2d(256, 256, 3, 1)
+        self.conv3 = nn.Conv2d(256, 256, 3, 1, 1)
         self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)
 
         self.bn1 = nn.BatchNorm2d(128)
