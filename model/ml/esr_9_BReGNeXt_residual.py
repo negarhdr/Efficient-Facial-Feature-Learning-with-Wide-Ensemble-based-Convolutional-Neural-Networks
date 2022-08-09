@@ -133,10 +133,10 @@ class Base(nn.Module):
 
     def forward(self, x):
         base_feat = torch.nn.functional.pad(x, (1, 1, 1, 1, 0, 0))
-        print('padded_input_shape', base_feat.shape)
+        # print('padded_input_shape', base_feat.shape)
         base_feat = self._conv0(base_feat)
         base_out = self.base_model(base_feat)
-        print('base_out_shape', base_out.shape)
+        # print('base_out_shape', base_out.shape)
 
         return base_out
 
