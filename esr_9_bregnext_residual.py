@@ -192,8 +192,6 @@ def main(args):
             running_corrects = [0.0 for _ in range(net.get_ensemble_size())]
             running_updates = 0
 
-            scheduler.step()
-
             for inputs, labels in train_loader:
                 # Get the inputs
                 inputs, labels = inputs.to(device), labels.to(device)
@@ -222,6 +220,7 @@ def main(args):
                 running_loss += loss.item()
                 running_updates += 1
 
+            scheduler.step()
             # Statistics
             print('[Branch {:d}, '
                   'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
