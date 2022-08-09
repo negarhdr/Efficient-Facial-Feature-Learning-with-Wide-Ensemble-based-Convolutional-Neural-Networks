@@ -31,7 +31,7 @@ import argparse
 
 # Modules
 from model.utils import udata, umath
-from model.ml.esr_9_BReGNeXt_residual import ESR
+from model.ml.esr_9_BReGNeXt import ESR
 
 
 def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_process="cpu", current_branch_on_training_val=0):
@@ -117,6 +117,14 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
+def focal_loss(input_tensor, target_tensor, weight=None, gamma=2, reduction='mean'):
+    log_prob = torch.nn.functional.log_softmax(input_tensor, dim=-1)
+    probs = torch.exp(log_prob)
+    balance_factor = 1  # try with and without balance factor
+    return torch.nn.functional.nll_loss((balance_factor * (1 - probs) ** gamma) * log_prob,
+                                        target_tensor, weight=weight, reduction=reduction)
+
+
 def main(args):
     # Experimental variables
     max_training_epoch = args.max_training_epoch
@@ -147,8 +155,10 @@ def main(args):
     net.to_device(device)
 
     # Set optimizer
-    optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+    '''optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])'''
+    optimizer = optim.Adam([{'params': net.base.parameters(), 'lr': 0.0001},
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
@@ -176,7 +186,8 @@ def main(args):
         best_ensemble_acc = 0.0
 
         # Initialize scheduler
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
+        # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8, last_epoch=-1)
 
         # History
         history_loss = []
@@ -208,7 +219,8 @@ def main(args):
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)
+                    # loss += criterion(emotions[i_4], labels)
+                    loss += focal_loss(emotions[i_4], labels)
 
                 # Backward
                 loss.backward()

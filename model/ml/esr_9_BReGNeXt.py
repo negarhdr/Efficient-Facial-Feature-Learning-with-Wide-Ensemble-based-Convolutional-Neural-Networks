@@ -1,27 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-Implementation of ESR-9 (Siqueira et al., 2020) trained on AffectNet (Mollahosseini et al., 2017) for emotion
-and affect perception.
-
-
-Reference:
-    Siqueira, H., Magg, S. and Wermter, S., 2020. Efficient Facial Feature Learning with Wide Ensemble-based
-    Convolutional Neural Networks. Proceedings of the Thirty-Fourth AAAI Conference on Artificial Intelligence
-    (AAAI-20), pages 1–1, New York, USA.
-
-    Mollahosseini, A., Hasani, B. and Mahoor, M.H., 2017. AffectNet: A database for facial expression, valence,
-    and arousal computing in the wild. IEEE Transactions on Affective Computing, 10(1), pp.18-31.
-"""
-
-__author__ = "Henrique Siqueira"
-__email__ = "siqueira.hc@outlook.com"
-__license__ = "MIT license"
-__version__ = "1.0"
-
-# Standard libraries
-from os import path
 
 # External libraries
 import torch.nn.functional as F
@@ -29,6 +5,7 @@ import torch.nn as nn
 import torch
 from os import path, makedirs
 import copy
+
 
 class BRegNextShortcutModifier(torch.nn.Module):
 
@@ -65,13 +42,13 @@ class BReGNeXtResidualLayer(torch.nn.Module):
         # First convolution
         normed_inputs = inputs if self._batchnorm_conv0 is None else self._batchnorm_conv0(inputs)
         normed_inputs = torch.nn.functional.elu(normed_inputs)
-        normed_inputs = torch.nn.functional.pad(normed_inputs, (1,1,1,1,0,0))
+        normed_inputs = torch.nn.functional.pad(normed_inputs, (1, 1, 1, 1, 0, 0))
         conv0_outputs = self._conv0(normed_inputs)
 
         # Second convolution
         normed_conv0_outputs = conv0_outputs if self._batchnorm_conv1 is None else self._batchnorm_conv1(conv0_outputs)
         normed_conv0_outputs = torch.nn.functional.elu(normed_conv0_outputs)
-        normed_conv0_outputs = torch.nn.functional.pad(normed_conv0_outputs, (1,1,1,1,0,0))
+        normed_conv0_outputs = torch.nn.functional.pad(normed_conv0_outputs, (1, 1,1, 1, 0, 0))
         conv1_outputs = self._conv1(normed_conv0_outputs)
 
 
@@ -128,7 +105,7 @@ class Base(nn.Module):
             BRegNextResidualBlock(n_blocks=7, in_channels=128, out_channels=128),
             torch.nn.BatchNorm2d(128),
             torch.nn.ELU(),
-            #torch.nn.AdaptiveAvgPool2d((1, 1)),
+            torch.nn.AdaptiveAvgPool2d((1, 1)),  # it should be commented out if you use branches
         )
 
     def forward(self, x):
@@ -153,7 +130,7 @@ class ConvolutionalBranch(nn.Module):
     def __init__(self):
         super(ConvolutionalBranch, self).__init__()
 
-        self.branch_model = torch.nn.Sequential(
+        '''self.branch_model = torch.nn.Sequential(
             BRegNextResidualBlock(n_blocks=7, in_channels=128, out_channels=128),
             BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=256, downsample_stride=2),
             BRegNextResidualBlock(n_blocks=8, in_channels=256, out_channels=256),
@@ -161,16 +138,15 @@ class ConvolutionalBranch(nn.Module):
             torch.nn.BatchNorm2d(512),
             torch.nn.ELU(),
             torch.nn.AdaptiveAvgPool2d((1, 1)),
-        )
+        )'''
 
         self.fc_dimensional = nn.Linear(8, 2)
-        self._fc0 = torch.nn.Linear(512, 8)
+        self._fc0 = torch.nn.Linear(128, 8)  # it should be 512
 
     def forward(self, x_shared_representations):
-        # Convolutional, batch-normalization and pooling layers
-        x_conv_branch = self.branch_model(x_shared_representations)
-        x_conv_branch = x_conv_branch.view(-1, 512)
-        discrete_emotion = self._fc0(x_conv_branch)
+        # x_conv_branch = self.branch_model(x_shared_representations)
+        # x_conv_branch = x_conv_branch.view(-1, 512)
+        discrete_emotion = self._fc0(x_shared_representations)
         x_conv_branch = F.relu(discrete_emotion)
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
