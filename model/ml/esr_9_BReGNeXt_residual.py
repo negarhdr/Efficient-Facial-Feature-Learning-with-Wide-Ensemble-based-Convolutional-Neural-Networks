@@ -133,10 +133,10 @@ class Base(nn.Module):
 
     def forward(self, x):
         base_feat = torch.nn.functional.pad(x, (1, 1, 1, 1, 0, 0))
-        # print('padded_input_shape', base_feat.shape)
+        # print('padded_input_shape', base_feat.shape)  # 32 x 3 x 98 x 98
         base_feat = self._conv0(base_feat)
         base_out = self.base_model(base_feat)
-        print('base_out_shape', base_out.shape)
+        # print('base_out_shape', base_out.shape)  # 32 x 128 x 24 x 24
 
         return base_out
 
@@ -153,52 +153,24 @@ class ConvolutionalBranch(nn.Module):
     def __init__(self):
         super(ConvolutionalBranch, self).__init__()
 
-        '''# Convolutional layers
-        self.conv1 = nn.Conv2d(128, 128, 3, 1)
-        self.conv2 = nn.Conv2d(128, 256, 3, 1)
-        self.conv3 = nn.Conv2d(256, 256, 3, 1)
-        self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)
+        self.branch_model = torch.nn.Sequential(
+            BRegNextResidualBlock(n_blocks=7, in_channels=128, out_channels=128),
+            BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=256, downsample_stride=2),
+            BRegNextResidualBlock(n_blocks=8, in_channels=256, out_channels=256),
+            BRegNextResidualBlock(n_blocks=1, in_channels=256, out_channels=512, downsample_stride=2),
+            torch.nn.BatchNorm2d(512),
+            torch.nn.ELU(),
+            torch.nn.AdaptiveAvgPool2d((1, 1)),
+        )
 
-        # Batch-normalization layers
-        self.bn1 = nn.BatchNorm2d(128)
-        self.bn2 = nn.BatchNorm2d(256)
-        self.bn3 = nn.BatchNorm2d(256)
-        self.bn4 = nn.BatchNorm2d(512)
-
-        # Second last, fully-connected layer related to discrete emotion labels
-        self.fc = nn.Linear(512, 8)
-
-        # Last, fully-connected layer related to continuous affect levels (arousal and valence)
-        self.fc_dimensional = nn.Linear(8, 2)
-
-        # Pooling layers
-        # Max-pooling layer
-        self.pool = nn.MaxPool2d(2, 2)
-
-        # Global average pooling layer
-        self.global_pool = nn.AdaptiveAvgPool2d(1)'''
-        self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
         self.fc_dimensional = nn.Linear(8, 2)
         self._fc0 = torch.nn.Linear(128, 8)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
-        '''x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
-        x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
-        x_conv_branch = self.global_pool(F.relu(self.bn4(self.conv4(x_conv_branch))))
+        x_conv_branch = self.branch_model(x_shared_representations)
         x_conv_branch = x_conv_branch.view(-1, 512)
-
-        # Fully connected layer for emotion perception
-        discrete_emotion = self.fc(x_conv_branch)
-
-        # Application of the ReLU function to neurons related to discrete emotion labels
-        x_conv_branch = F.relu(discrete_emotion)
-
-        # Fully connected layer for affect perception
-        continuous_affect = self.fc_dimensional(x_conv_branch)'''
-        x_shared_representations = self.avgpool(x_shared_representations)
-        discrete_emotion = self._fc0(x_shared_representations.reshape(-1, 128))
+        discrete_emotion = self._fc0(x_conv_branch)
         x_conv_branch = F.relu(discrete_emotion)
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
