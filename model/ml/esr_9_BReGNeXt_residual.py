@@ -164,7 +164,7 @@ class ConvolutionalBranch(nn.Module):
         )
 
         self.fc_dimensional = nn.Linear(8, 2)
-        self._fc0 = torch.nn.Linear(128, 8)
+        self._fc0 = torch.nn.Linear(512, 8)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
