@@ -177,6 +177,7 @@ class ConvolutionalBranch(nn.Module):
 
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)'''
+        self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
         self.fc_dimensional = nn.Linear(8, 2)
         self._fc0 = torch.nn.Linear(128, 8)
 
@@ -196,7 +197,7 @@ class ConvolutionalBranch(nn.Module):
 
         # Fully connected layer for affect perception
         continuous_affect = self.fc_dimensional(x_conv_branch)'''
-
+        x_shared_representations = self.avgpool(x_shared_representations)
         discrete_emotion = self._fc0(x_shared_representations.reshape(-1, 128))
         x_conv_branch = F.relu(discrete_emotion)
         continuous_affect = self.fc_dimensional(x_conv_branch)
