@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -296,15 +296,18 @@ def main(args):
             net.to_device(device)
 
             # Set optimizer for base and the new branch
-            optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
+            '''optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
-                                    'momentum': 0.9}])
+                                    'momentum': 0.9}])'''
+            optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.00001},
+                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])
 
             # Set optimizer for the trained branches
             if not args.freeze_trained_branches:
                 for b in range(net.get_ensemble_size() - 1):
-                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
-                                               'momentum': 0.9})
+                    '''optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
+                                               'momentum': 0.9})'''
+                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.00001})
 
         # Finish training after training all branches
         else:
@@ -315,9 +318,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/BReGNeXt")
-    parser.add_argument("--name_experiment", default="BReGNeXt_ESR_1_base_Adam")
+    parser.add_argument("--name_experiment", default="BReGNeXt_ESR_9_base_branch_Adam")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
-    parser.add_argument("--num_branches_trained_network", default=1)
+    parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
     parser.add_argument("--max_training_epoch", default=150)
     parser.add_argument("--max_finetune_epoch", default=1)

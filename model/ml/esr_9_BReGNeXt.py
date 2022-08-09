@@ -50,8 +50,6 @@ class BReGNeXtResidualLayer(torch.nn.Module):
         normed_conv0_outputs = torch.nn.functional.elu(normed_conv0_outputs)
         normed_conv0_outputs = torch.nn.functional.pad(normed_conv0_outputs, (1, 1,1, 1, 0, 0))
         conv1_outputs = self._conv1(normed_conv0_outputs)
-
-
         shortcut_modifier = self._shortcut(inputs)
         if self._downsample_stride > 1:
             shortcut_modifier = torch.nn.functional.avg_pool2d(shortcut_modifier, self._downsample_stride, self._downsample_stride)
@@ -98,14 +96,14 @@ class Base(nn.Module):
             # NOTE: The original BReGNeXt code uses a truncated normal initialization for this convolution, however
             # that is not implemented in PyTorch 1.7 - This defaults to a uniform initializer in PyTorch.
 
-            BRegNextResidualBlock(n_blocks=7, in_channels=32, out_channels=32),
+            BRegNextResidualBlock(n_blocks=1, in_channels=32, out_channels=32),
             BRegNextResidualBlock(n_blocks=1, in_channels=32, out_channels=64, downsample_stride=2),
-            BRegNextResidualBlock(n_blocks=8, in_channels=64, out_channels=64),
+            BRegNextResidualBlock(n_blocks=1, in_channels=64, out_channels=64),
             BRegNextResidualBlock(n_blocks=1, in_channels=64, out_channels=128, downsample_stride=2),
-            BRegNextResidualBlock(n_blocks=7, in_channels=128, out_channels=128),
+            BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=128),
             torch.nn.BatchNorm2d(128),
             torch.nn.ELU(),
-            torch.nn.AdaptiveAvgPool2d((1, 1)),  # it should be commented out if you use branches
+            # torch.nn.AdaptiveAvgPool2d((1, 1)),  # it should be commented out if you use branches
         )
 
     def forward(self, x):
@@ -130,23 +128,23 @@ class ConvolutionalBranch(nn.Module):
     def __init__(self):
         super(ConvolutionalBranch, self).__init__()
 
-        '''self.branch_model = torch.nn.Sequential(
-            BRegNextResidualBlock(n_blocks=7, in_channels=128, out_channels=128),
+        self.branch_model = torch.nn.Sequential(
+            BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=128),
             BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=256, downsample_stride=2),
-            BRegNextResidualBlock(n_blocks=8, in_channels=256, out_channels=256),
+            BRegNextResidualBlock(n_blocks=1, in_channels=256, out_channels=256),
             BRegNextResidualBlock(n_blocks=1, in_channels=256, out_channels=512, downsample_stride=2),
             torch.nn.BatchNorm2d(512),
             torch.nn.ELU(),
             torch.nn.AdaptiveAvgPool2d((1, 1)),
-        )'''
+        )
 
         self.fc_dimensional = nn.Linear(8, 2)
-        self._fc0 = torch.nn.Linear(128, 8)  # it should be 512
+        self._fc0 = torch.nn.Linear(512, 8)  # it should be 512
 
     def forward(self, x_shared_representations):
-        # x_conv_branch = self.branch_model(x_shared_representations)
-        # x_conv_branch = x_conv_branch.view(-1, 512)
-        x_conv_branch = x_shared_representations.view(-1, 128)
+        x_conv_branch = self.branch_model(x_shared_representations)
+        x_conv_branch = x_conv_branch.view(-1, 512)
+        # x_conv_branch = x_shared_representations.view(-1, 128)
         discrete_emotion = self._fc0(x_conv_branch)
         x_conv_branch = F.relu(discrete_emotion)
         continuous_affect = self.fc_dimensional(x_conv_branch)
