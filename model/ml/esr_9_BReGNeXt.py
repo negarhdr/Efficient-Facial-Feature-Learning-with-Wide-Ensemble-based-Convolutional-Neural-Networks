@@ -146,7 +146,8 @@ class ConvolutionalBranch(nn.Module):
     def forward(self, x_shared_representations):
         # x_conv_branch = self.branch_model(x_shared_representations)
         # x_conv_branch = x_conv_branch.view(-1, 512)
-        discrete_emotion = self._fc0(x_shared_representations)
+        x_conv_branch = x_shared_representations.view(-1, 128)
+        discrete_emotion = self._fc0(x_conv_branch)
         x_conv_branch = F.relu(discrete_emotion)
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
