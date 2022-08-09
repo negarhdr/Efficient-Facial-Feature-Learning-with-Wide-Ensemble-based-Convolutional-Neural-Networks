@@ -128,7 +128,7 @@ class Base(nn.Module):
             BRegNextResidualBlock(n_blocks=7, in_channels=128, out_channels=128),
             torch.nn.BatchNorm2d(128),
             torch.nn.ELU(),
-            torch.nn.AdaptiveAvgPool2d((1, 1)),
+            #torch.nn.AdaptiveAvgPool2d((1, 1)),
         )
 
     def forward(self, x):
@@ -136,7 +136,7 @@ class Base(nn.Module):
         # print('padded_input_shape', base_feat.shape)
         base_feat = self._conv0(base_feat)
         base_out = self.base_model(base_feat)
-        # print('base_out_shape', base_out.shape)
+        print('base_out_shape', base_out.shape)
 
         return base_out
 
