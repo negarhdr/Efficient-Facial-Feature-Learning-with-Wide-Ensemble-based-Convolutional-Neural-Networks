@@ -155,10 +155,10 @@ def main(args):
     net.to_device(device)
 
     # Set optimizer
-    '''optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])'''
-    optimizer = optim.Adam([{'params': net.base.parameters(), 'lr': 0.0001},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])
+    optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+    '''optimizer = optim.Adam([{'params': net.base.parameters(), 'lr': 0.0001},
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])'''
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
@@ -219,8 +219,8 @@ def main(args):
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    # loss += criterion(emotions[i_4], labels)
-                    loss += focal_loss(emotions[i_4], labels)
+                    loss += criterion(emotions[i_4], labels)
+                    # loss += focal_loss(emotions[i_4], labels)
 
                 # Backward
                 loss.backward()
@@ -296,18 +296,18 @@ def main(args):
             net.to_device(device)
 
             # Set optimizer for base and the new branch
-            '''optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
+            optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
-                                    'momentum': 0.9}])'''
-            optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.00001},
-                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])
+                                    'momentum': 0.9}])
+            '''optimizer = optim.Adam([{'params': net.base.parameters(), 'lr': 0.00001},
+                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])'''
 
             # Set optimizer for the trained branches
             if not args.freeze_trained_branches:
                 for b in range(net.get_ensemble_size() - 1):
-                    '''optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
-                                               'momentum': 0.9})'''
-                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.00001})
+                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
+                                               'momentum': 0.9})
+                    '''optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.00001})'''
 
         # Finish training after training all branches
         else:
@@ -318,7 +318,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/BReGNeXt")
-    parser.add_argument("--name_experiment", default="BReGNeXt_ESR_9_base_branch_Adam")
+    parser.add_argument("--name_experiment", default="BReGNeXt_ESR_9_base_branch_SGD_wofocal")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
