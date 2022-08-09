@@ -82,82 +82,16 @@ class ConvolutionalBranch(nn.Module):
     def __init__(self):
         super(ConvolutionalBranch, self).__init__()
 
-        ########### Patch 1 #############
-        self.conv11 = nn.Conv2d(128, 128, 3, 1)
-        self.conv12 = nn.Conv2d(128, 256, 3, 1)
-        self.conv13 = nn.Conv2d(256, 256, 3, 1)
-        self.conv14 = nn.Conv2d(256, 512, 3, 1, 1)
-
-        self.bn11 = nn.BatchNorm2d(128)
-        self.bn12 = nn.BatchNorm2d(256)
-        self.bn13 = nn.BatchNorm2d(256)
-        self.bn14 = nn.BatchNorm2d(512)
-
-        self.cbam11 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam12 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam13 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam14 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-
-        ########### Patch 2 ############
-        self.conv21 = nn.Conv2d(128, 128, 3, 1)
-        self.conv22 = nn.Conv2d(128, 256, 3, 1)
-        self.conv23 = nn.Conv2d(256, 256, 3, 1)
-        self.conv24 = nn.Conv2d(256, 512, 3, 1, 1)
-
-        self.bn21 = nn.BatchNorm2d(128)
-        self.bn22 = nn.BatchNorm2d(256)
-        self.bn23 = nn.BatchNorm2d(256)
-        self.bn24 = nn.BatchNorm2d(512)
-
-        self.cbam21 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam22 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam23 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam24 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-
-        ########### Patch 3 ############
-        self.conv31 = nn.Conv2d(128, 128, 3, 1)
-        self.conv32 = nn.Conv2d(128, 256, 3, 1)
-        self.conv33 = nn.Conv2d(256, 256, 3, 1)
-        self.conv34 = nn.Conv2d(256, 512, 3, 1, 1)
-
-        self.bn31 = nn.BatchNorm2d(128)
-        self.bn32 = nn.BatchNorm2d(256)
-        self.bn33 = nn.BatchNorm2d(256)
-        self.bn34 = nn.BatchNorm2d(512)
-
-        self.cbam31 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam32 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam33 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam34 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-
-        ########### Patch 4 ############
-        self.conv41 = nn.Conv2d(128, 128, 3, 1)
-        self.conv42 = nn.Conv2d(128, 256, 3, 1)
-        self.conv43 = nn.Conv2d(256, 256, 3, 1)
-        self.conv44 = nn.Conv2d(256, 512, 3, 1, 1)
-
-        self.bn41 = nn.BatchNorm2d(128)
-        self.bn42 = nn.BatchNorm2d(256)
-        self.bn43 = nn.BatchNorm2d(256)
-        self.bn44 = nn.BatchNorm2d(512)
-
-        self.cbam41 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam42 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam43 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam44 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-
         ########### Global ############
         self.conv1 = nn.Conv2d(128, 128, 3, 1)
         self.conv2 = nn.Conv2d(128, 256, 3, 1)
-        self.conv3 = nn.Conv2d(256, 256, 3, 1, 1)
+        self.conv3 = nn.Conv2d(256, 256, 3, 1)
         self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)
-        self.conv5 = nn.Conv2d(512, 512, 1, 1, 1)
 
         self.bn1 = nn.BatchNorm2d(128)
         self.bn2 = nn.BatchNorm2d(256)
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(512)
-        self.bn5 = nn.BatchNorm2d(512)
 
         self.cbam1 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam2 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
@@ -176,44 +110,14 @@ class ConvolutionalBranch(nn.Module):
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-    def forward(self, x, patch_11, patch_12, patch_21, patch_22):
+    def forward(self, x):
         # Convolutional, batch-normalization and pooling layers
-        # patch_11
-        x_conv_branch_p11 = F.relu(self.bn11(self.conv11(patch_11)))  # 32x128x8x8
-        x_conv_branch_p11, _ = self.cbam11(x_conv_branch_p11)
-        x_conv_branch_p11 = F.relu(self.bn12(self.conv12(x_conv_branch_p11)))  # 32x256x6x6
-        x_conv_branch_p11, _ = self.cbam12(x_conv_branch_p11)
-        x_conv_branch_p11 = F.relu(self.bn13(self.conv13(x_conv_branch_p11)))  # 32x256x4x4
-        x_conv_branch_p11, _ = self.cbam13(x_conv_branch_p11)
-        x_conv_branch_p11 = F.relu(self.bn14(self.conv14(x_conv_branch_p11)))   # 32x512x4x4
-        x_conv_branch_p11, attn_mat_p11 = self.cbam14(x_conv_branch_p11)  # attn_mat of size 32x1x4x4
-        # patch_12
-        x_conv_branch_p12 = F.relu(self.bn21(self.conv21(patch_12)))  # 32x128x8x8
-        x_conv_branch_p12, _ = self.cbam21(x_conv_branch_p12)
-        x_conv_branch_p12 = F.relu(self.bn22(self.conv22(x_conv_branch_p12)))  # 32x256x6x6
-        x_conv_branch_p12, _ = self.cbam22(x_conv_branch_p12)
-        x_conv_branch_p12 = F.relu(self.bn23(self.conv23(x_conv_branch_p12)))  # 32x256x4x4
-        x_conv_branch_p12, _ = self.cbam23(x_conv_branch_p12)
-        x_conv_branch_p12 = F.relu(self.bn24(self.conv24(x_conv_branch_p12)))  # 32x512x4x4
-        x_conv_branch_p12, attn_mat_p12 = self.cbam24(x_conv_branch_p12)  # attn_mat of size 32x1x4x4
-        # patch_21
-        x_conv_branch_p21 = F.relu(self.bn31(self.conv31(patch_21)))  # 32x128x8x8
-        x_conv_branch_p21, _ = self.cbam31(x_conv_branch_p21)
-        x_conv_branch_p21 = F.relu(self.bn32(self.conv32(x_conv_branch_p21)))  # 32x256x6x6
-        x_conv_branch_p21, _ = self.cbam32(x_conv_branch_p21)
-        x_conv_branch_p21 = F.relu(self.bn33(self.conv33(x_conv_branch_p21)))  # 32x256x4x4
-        x_conv_branch_p21, _ = self.cbam33(x_conv_branch_p21)
-        x_conv_branch_p21 = F.relu(self.bn34(self.conv34(x_conv_branch_p21)))  # 32x512x4x4
-        x_conv_branch_p21, attn_mat_p21 = self.cbam34(x_conv_branch_p21)  # attn_mat of size 32x1x4x4
-        # patch_22
-        x_conv_branch_p22 = F.relu(self.bn41(self.conv41(patch_22)))  # 32x128x8x8
-        x_conv_branch_p22, _ = self.cbam41(x_conv_branch_p22)
-        x_conv_branch_p22 = F.relu(self.bn42(self.conv42(x_conv_branch_p22)))  # 32x256x6x6
-        x_conv_branch_p22, _ = self.cbam42(x_conv_branch_p22)
-        x_conv_branch_p22 = F.relu(self.bn43(self.conv43(x_conv_branch_p22)))  # 32x256x4x4
-        x_conv_branch_p22, _ = self.cbam43(x_conv_branch_p22)
-        x_conv_branch_p22 = F.relu(self.bn44(self.conv44(x_conv_branch_p22)))  # 32x512x4x4
-        x_conv_branch_p22, attn_mat_p22 = self.cbam44(x_conv_branch_p22)  # attn_mat of size 32x1x4x4
+        h = x.shape[2]
+        w = x.shape[3]
+        patch_11 = x[:, :, 0:10, 0:10]
+        patch_12 = x[:, :, 0:10, 10:20]
+        patch_21 = x[:, :, 10:20, 0:10]
+        patch_22 = x[:, :, 10:20, 10:20]
 
         x_conv_out_1 = torch.cat([x_conv_branch_p11, x_conv_branch_p11], dim=3)
         x_conv_out_2 = torch.cat([x_conv_branch_p21, x_conv_branch_p22], dim=3)
@@ -224,7 +128,6 @@ class ConvolutionalBranch(nn.Module):
         attn_mat_out = torch.cat([attn_mat_1, attn_mat_2], dim=2)
 
         # Global
-        # patch_11
         x_conv_global = F.relu(self.bn1(self.conv1(x)))
         x_conv_global, _ = self.cbam1(x_conv_global)
         x_conv_global = self.pool(F.relu(self.bn2(self.conv2(x_conv_global))))
@@ -235,8 +138,8 @@ class ConvolutionalBranch(nn.Module):
         x_conv_global, attn_mat = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
 
         # x_conv_branch = self.bn5(x_conv_out + x_conv_global) # check if residual block needs relu and bn?
-        x_conv_branch = x_conv_out + x_conv_global
-        # x_conv_branch = F.relu(self.bn5(self.conv5(x_conv_out + x_conv_global)))
+        # x_conv_branch = x_conv_out + x_conv_global
+        x_conv_branch = F.relu(self.bn5(self.conv5(x_conv_out + x_conv_global)))
 
         # Prepare features for Classification & Regression
         x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
@@ -414,14 +317,9 @@ class ESR(nn.Module):
         # Get shared representations
         x_shared_representations = self.base(x)  # 32x128x20x20
 
-        patch_11 = x_shared_representations[:, :, 0:10, 0:10]
-        patch_12 = x_shared_representations[:, :, 0:10, 10:20]
-        patch_21 = x_shared_representations[:, :, 10:20, 0:10]
-        patch_22 = x_shared_representations[:, :, 10:20, 10:20]
-
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(x_shared_representations, patch_11, patch_12, patch_21, patch_22)
+            output_emotion, output_affect, attn_mat = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
             heads.append(attn_mat[:, 0, :, :])
@@ -429,4 +327,3 @@ class ESR(nn.Module):
         # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
 
         return emotions, affect_values, attn_heads
-
