@@ -27,7 +27,8 @@ from os import path
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
-
+from os import path, makedirs
+import copy
 
 class BRegNextShortcutModifier(torch.nn.Module):
 
@@ -263,7 +264,7 @@ class ESR(nn.Module):
     INPUT_IMAGE_NORMALIZATION_MEAN = [0.0, 0.0, 0.0]
     INPUT_IMAGE_NORMALIZATION_STD = [1.0, 1.0, 1.0]
     # Path to saved network
-    PATH_TO_SAVED_NETWORK = "./model/ml/trained_models/esr_9"
+    PATH_TO_SAVED_NETWORK = "./model/ml/trained_models/esr_9_cbam"
     FILE_NAME_BASE_NETWORK = "Net-Base-Shared_Representations.pt"
     FILE_NAME_CONV_BRANCH = "Net-Branch_{}.pt"
 
@@ -278,18 +279,70 @@ class ESR(nn.Module):
 
         # Base of ESR-9 as described in the docstring (see mark 1)
         self.base = Base()
-        self.base.to(device)
+        self.device = device
+        self.base.to(self.device)
 
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
         self.convolutional_branches = []
-        for i in range(1, len(self) + 1):
-            self.convolutional_branches.append(ConvolutionalBranch())
-            self.convolutional_branches[-1].to(device)
-
         self.to(device)
-
         # Evaluation mode on
         # self.eval()
+
+    def get_ensemble_size(self):
+        return len(self.convolutional_branches)
+
+    def add_branch(self):
+        self.convolutional_branches.append(ConvolutionalBranch())
+        self.convolutional_branches[-1].to(self.device)
+
+    @staticmethod
+    def save(state_dicts, base_path_to_save_model, current_branch_save):
+        if not path.isdir(path.join(base_path_to_save_model, str(current_branch_save))):
+            makedirs(path.join(base_path_to_save_model, str(current_branch_save)))
+
+        torch.save(state_dicts[0],
+                   path.join(base_path_to_save_model, str(current_branch_save),
+                             "Net-Base-Shared_Representations.pt"))
+
+        for i in range(1, len(state_dicts)):
+            torch.save(state_dicts[i], path.join(base_path_to_save_model, str(current_branch_save),
+                                                 "Net-Branch_{}.pt".format(i)))
+
+        print("Network has been "
+              "saved at: {}".format(path.join(base_path_to_save_model, str(current_branch_save))))
+
+    def to_state_dict(self):
+        state_dicts = [copy.deepcopy(self.base.state_dict())]
+        for b in self.convolutional_branches:
+            state_dicts.append(copy.deepcopy(b.state_dict()))
+
+        return state_dicts
+
+    def to_device(self, device_to_process="cpu"):
+        self.to(device_to_process)
+        self.base.to(device_to_process)
+
+        for b_td in self.convolutional_branches:
+            b_td.to(device_to_process)
+
+    def load(self, device, ensemble_size=9):
+        # load base
+        self.base.load_state_dict(torch.load(path.join(ESR.PATH_TO_SAVED_NETWORK, ESR.FILE_NAME_BASE_NETWORK),
+                                             map_location=device))
+        self.base.to(device)
+        # load branches
+        for i in range(1, ensemble_size + 1):
+            self.convolutional_branches.append(ConvolutionalBranch())
+            self.convolutional_branches[-1].load_state_dict(torch.load(
+                path.join(ESR.PATH_TO_SAVED_NETWORK, ESR.FILE_NAME_CONV_BRANCH.format(i)), map_location=device))
+            self.convolutional_branches[-1].to(device)
+        self.to(device)
+
+    def reload(self, best_configuration):
+        self.base.load_state_dict(best_configuration[0])
+
+        for i in range(self.get_ensemble_size()):
+            self.convolutional_branches[i].load_state_dict(best_configuration[i + 1])
 
     def forward(self, x):
         """
@@ -312,11 +365,4 @@ class ESR(nn.Module):
             emotions.append(output_emotion)
             affect_values.append(output_affect)
 
-        return emotions, affect_values  # 9 lists for each output! 9*8, 9*2
-
-    def __len__(self):
-        """
-        ESR with nine branches trained on AffectNet (Siqueira et al., 2020).
-        :return: (int) Size of the ensemble
-        """
-        return 9
+        return emotions, affect_values
