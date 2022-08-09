@@ -210,8 +210,11 @@ def main(args):
     net.to_device(device)
 
     # Set optimizer
-    optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+    '''optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])'''
+
+    optimizer = optim.Adam([{'params': net.base.parameters(), 'lr': 0.0001},
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
@@ -241,7 +244,8 @@ def main(args):
         best_ensemble_acc = 0.0
 
         # Initialize scheduler
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
+        # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8, last_epoch=-1)
 
         # History
         history_loss = []
@@ -356,15 +360,20 @@ def main(args):
             net.to_device(device)
 
             # Set optimizer for base and the new branch
-            optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
+            '''optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
-                                    'momentum': 0.9}])
+                                    'momentum': 0.9}])'''
+
+            optimizer = optim.Adam([{'params': net.base.parameters(), 'lr': 0.0001},
+                                   {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.0001}])
 
             # Set optimizer for the trained branches
             if not args.freeze_trained_branches:
                 for b in range(net.get_ensemble_size() - 1):
-                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
-                                               'momentum': 0.9})
+                    '''optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.01,
+                                               'momentum': 0.9})'''
+
+                    optimizer.add_param_group({'params': net.convolutional_branches[b].parameters(), 'lr': 0.0001})
 
         # Finish training after training all branches
         else:
@@ -375,7 +384,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/")
-    parser.add_argument("--name_experiment", default="AffectNet_Discrete_esr9_cbam_bb_focal25_wodiv")
+    parser.add_argument("--name_experiment", default="AffectNet_Discrete_esr9_cbam_bb_adam_focal")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
