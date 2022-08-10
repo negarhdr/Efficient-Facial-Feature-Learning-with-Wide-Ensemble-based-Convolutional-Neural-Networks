@@ -25,7 +25,7 @@ class BRegNextShortcutModifier(torch.nn.Module):
 
 class BReGNeXtResidualLayer(torch.nn.Module):
 
-    def __init__(self, in_channels, out_channels, downsample_stride = 1):
+    def __init__(self, in_channels, out_channels, downsample_stride=1):
         super(BReGNeXtResidualLayer, self).__init__()
 
         self._out_channels = out_channels
