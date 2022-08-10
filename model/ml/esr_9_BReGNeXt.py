@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch
 from os import path, makedirs
 import copy
+from .cbam import CBAM
+
 
 
 class BRegNextShortcutModifier(torch.nn.Module):
@@ -97,10 +99,15 @@ class Base(nn.Module):
             # that is not implemented in PyTorch 1.7 - This defaults to a uniform initializer in PyTorch.
 
             BRegNextResidualBlock(n_blocks=1, in_channels=32, out_channels=32),
+            CBAM(gate_channels=32, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=32, out_channels=64, downsample_stride=2),
+            CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=64, out_channels=64),
+            CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=64, out_channels=128, downsample_stride=2),
+            CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=128),
+            CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             torch.nn.BatchNorm2d(128),
             torch.nn.ELU(),
             # torch.nn.AdaptiveAvgPool2d((1, 1)),  # it should be commented out if you use branches
@@ -130,9 +137,13 @@ class ConvolutionalBranch(nn.Module):
 
         self.branch_model = torch.nn.Sequential(
             BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=128),
+            CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=128, out_channels=256, downsample_stride=2),
+            CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=256, out_channels=256),
+            CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             BRegNextResidualBlock(n_blocks=1, in_channels=256, out_channels=512, downsample_stride=2),
+            CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False),
             torch.nn.BatchNorm2d(512),
             torch.nn.ELU(),
             torch.nn.AdaptiveAvgPool2d((1, 1)),
