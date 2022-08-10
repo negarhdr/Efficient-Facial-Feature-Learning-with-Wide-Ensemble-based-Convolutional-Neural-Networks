@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -322,15 +322,12 @@ if __name__ == "__main__":
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
-    parser.add_argument("--max_training_epoch", default=100)
-    parser.add_argument("--max_finetune_epoch", default=50)
+    parser.add_argument("--max_training_epoch", default=50)
+    parser.add_argument("--max_finetune_epoch", default=20)
     parser.add_argument("--freeze_trained_branches", default=False)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--gpu_indx", default="1")
 
     args = parser.parse_args()
-
-    # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_indx
 
     print("Processing...")
     main(args)
