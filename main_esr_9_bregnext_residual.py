@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -318,7 +318,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/BReGNeXt")
-    parser.add_argument("--name_experiment", default="BReGNeXt_ESR_9_base_branch_SGD_wofocal")
+    parser.add_argument("--name_experiment", default="BReGNeXt_CBAM_ESR_9_base_branch_SGD_wofocal")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
