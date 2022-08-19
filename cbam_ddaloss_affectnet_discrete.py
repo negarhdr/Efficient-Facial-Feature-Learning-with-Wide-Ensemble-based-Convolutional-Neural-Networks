@@ -124,13 +124,13 @@ class DDA_Loss(nn.Module):
         self.log_softmax = nn.LogSoftmax(dim=1)
         self.nllloss = nn.NLLLoss()
 
-        def forward(self, dist_center, label, batch_size):
-            for i in range(len(dist_center)):
-                dist = dist_center[i]
-                scores = self.log_softmax(dist)
-                ddaloss = self.nllloss(scores, label) / batch_size / 2.0
-                self.totloss += ddaloss
-            return self.totloss
+    def forward(self, dist_center, label, batch_size):
+        for i in range(len(dist_center)):
+            dist = dist_center[i]
+            scores = self.log_softmax(dist)
+            ddaloss = self.nllloss(scores, label) / batch_size / 2.0
+            self.totloss += ddaloss
+        return self.totloss
 
 '''class CenterLoss(nn.Module):
     def __init__(self, ):
