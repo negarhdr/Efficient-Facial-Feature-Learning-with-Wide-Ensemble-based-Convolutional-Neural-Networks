@@ -112,4 +112,4 @@ class CBAM(nn.Module):
         x_out = self.ChannelGate(x)
         if not self.no_spatial:
             x_out, attn_mat = self.SpatialGate(x_out)
-        return x_out  #, attn_mat  # Shape: NxCxHxW
+        return x_out, attn_mat  # Shape: NxCxHxW
