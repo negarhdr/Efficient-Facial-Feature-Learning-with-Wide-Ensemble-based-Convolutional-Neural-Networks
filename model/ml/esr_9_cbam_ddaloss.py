@@ -313,7 +313,8 @@ class ESR(nn.Module):
             output_emotion, output_affect, branch_feat = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            dist = (branch_feat.unsqueeze(1) - self.centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+            center_weights = self.centers.weight
+            dist = (branch_feat.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
             dist_out = -1 * (dist.sum(2))  # NxC (check)
             dist_center.append(dist_out)
 
