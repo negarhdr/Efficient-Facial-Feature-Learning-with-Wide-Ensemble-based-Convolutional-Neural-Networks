@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This is not completed
+This is the second version of esr_5 in which I apply the new attention methods (efficient and effective ones, SE, CBAM)
 """
 
 __author__ = "Henrique Siqueira"
@@ -67,7 +67,7 @@ class Base(nn.Module):
         x_shared_representations = self.pool(F.relu(self.bn4(self.conv4(x_shared_representations))))
         x_shared_representations, _ = self.cbam4(x_shared_representations)
 
-        return x_shared_representations  # 32x128x20x20
+        return x_shared_representations
 
 
 class ConvolutionalBranch(nn.Module):
@@ -82,12 +82,13 @@ class ConvolutionalBranch(nn.Module):
     def __init__(self):
         super(ConvolutionalBranch, self).__init__()
 
-        ########### Global ############
+        # Convolutional layers
         self.conv1 = nn.Conv2d(128, 128, 3, 1)
         self.conv2 = nn.Conv2d(128, 256, 3, 1)
         self.conv3 = nn.Conv2d(256, 256, 3, 1)
         self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)
 
+        # Batch-normalization layers
         self.bn1 = nn.BatchNorm2d(128)
         self.bn2 = nn.BatchNorm2d(256)
         self.bn3 = nn.BatchNorm2d(256)
@@ -110,36 +111,21 @@ class ConvolutionalBranch(nn.Module):
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-    def forward(self, x):
+    def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
-        h = x.shape[2]
-        w = x.shape[3]
-        patch_11 = x[:, :, 0:10, 0:10]
-        patch_12 = x[:, :, 0:10, 10:20]
-        patch_21 = x[:, :, 10:20, 0:10]
-        patch_22 = x[:, :, 10:20, 10:20]
+        x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
+        x_conv_branch, _ = self.cbam1(x_conv_branch)
 
-        x_conv_out_1 = torch.cat([x_conv_branch_p11, x_conv_branch_p11], dim=3)
-        x_conv_out_2 = torch.cat([x_conv_branch_p21, x_conv_branch_p22], dim=3)
-        x_conv_out = torch.cat([x_conv_out_1, x_conv_out_2], dim=2)
+        x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
+        x_conv_branch, _ = self.cbam2(x_conv_branch)
 
-        attn_mat_1 = torch.cat([attn_mat_p11, attn_mat_p12], dim=3)
-        attn_mat_2 = torch.cat([attn_mat_p21, attn_mat_p22], dim=3)
-        attn_mat_out = torch.cat([attn_mat_1, attn_mat_2], dim=2)
+        x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
+        x_conv_branch, _ = self.cbam3(x_conv_branch)
 
-        # Global
-        x_conv_global = F.relu(self.bn1(self.conv1(x)))
-        x_conv_global, _ = self.cbam1(x_conv_global)
-        x_conv_global = self.pool(F.relu(self.bn2(self.conv2(x_conv_global))))
-        x_conv_global, _ = self.cbam2(x_conv_global)
-        x_conv_global = F.relu(self.bn3(self.conv3(x_conv_global)))
-        x_conv_global, _ = self.cbam3(x_conv_global)
-        x_conv_global = F.relu(self.bn4(self.conv4(x_conv_global)))
-        x_conv_global, attn_mat = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
+        x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
+        x_conv_branch, attn_mat = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
 
-        # x_conv_branch = self.bn5(x_conv_out + x_conv_global) # check if residual block needs relu and bn?
-        # x_conv_branch = x_conv_out + x_conv_global
-        x_conv_branch = F.relu(self.bn5(self.conv5(x_conv_out + x_conv_global)))
+        # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
 
         # Prepare features for Classification & Regression
         x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
@@ -155,7 +141,7 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_mat_out
+        return discrete_emotion, continuous_affect, x_conv_branch
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -239,6 +225,10 @@ class ESR(nn.Module):
         self.device = device
         self.base.to(self.device)
 
+        # Class centers
+        self.centers = nn.Parameter(torch.FloatTensor(8, 512))
+        nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
+
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
         self.convolutional_branches = []
         self.to(device)
@@ -312,18 +302,19 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         affect_values = []
-        heads = []
+        dist_center = []
 
         # Get shared representations
-        x_shared_representations = self.base(x)  # 32x128x20x20
+        x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(x_shared_representations)
+            output_emotion, output_affect, branch_feat = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            heads.append(attn_mat[:, 0, :, :])
-        attn_heads = torch.stack(heads)  #.permute([1, 0, 2])
-        # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
+            dist = (branch_feat.unsqueeze(1) - self.centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+            dist_out = -1 * (dist.sum(2))  # NxC (check)
+            dist_center.append(dist_out)
 
-        return emotions, affect_values, attn_heads
+        return emotions, affect_values, dist_center
+

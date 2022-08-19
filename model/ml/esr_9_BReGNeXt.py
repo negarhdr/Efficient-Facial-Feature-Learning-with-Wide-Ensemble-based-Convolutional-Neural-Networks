@@ -7,6 +7,7 @@ from os import path, makedirs
 import copy
 from .cbam import CBAM
 
+# in this version the layer structure of both base and branches is based on BReGNeXt
 
 
 class BRegNextShortcutModifier(torch.nn.Module):

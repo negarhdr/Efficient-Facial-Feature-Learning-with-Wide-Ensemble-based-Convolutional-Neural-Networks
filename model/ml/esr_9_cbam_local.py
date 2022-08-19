@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This is the second version of esr_5 in which I apply the new attention methods (efficient and effective ones, SE, CBAM)
+In this version I divide images to patches and apply attention on each patch separately!
 """
 
 __author__ = "Henrique Siqueira"
