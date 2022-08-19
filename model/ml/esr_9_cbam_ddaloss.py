@@ -226,8 +226,8 @@ class ESR(nn.Module):
         self.base.to(self.device)
 
         # Class centers
-        self.centers = nn.Parameter(torch.FloatTensor(8, 512))
-        nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
+        self.centers = nn.Parameter(torch.FloatTensor(512, 8))
+        # nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
 
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
         self.convolutional_branches = []
