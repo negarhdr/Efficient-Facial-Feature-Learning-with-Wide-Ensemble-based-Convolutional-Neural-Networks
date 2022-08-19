@@ -248,7 +248,7 @@ def main(args):
                 loss += ddaloss(dist_center, labels, 32)
 
                 # Backward
-                loss.backward(retain_graph=True)
+                loss.backward()
 
                 # Optimize
                 optimizer.step()
