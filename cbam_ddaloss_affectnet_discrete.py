@@ -218,7 +218,7 @@ def main(args):
         history_val_acc = [[] for _ in range(net.get_ensemble_size() + 1)]
 
         dtype = torch.cuda.FloatTensor
-        centers = Variable(torch.randn(512, 8).type(dtype), requires_grad=True)
+        centers = Variable(torch.randn(512, 8).type(dtype), requires_grad=False)
         centers = centers.to(device)
         # centers = nn.Parameter(torch.FloatTensor(512, 8))
 
