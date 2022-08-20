@@ -102,6 +102,9 @@ class ConvolutionalBranch(nn.Module):
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc = nn.Linear(512, 8)
 
+        # centers
+        self.centers = nn.Linear(8, 512)
+
         # Last, fully-connected layer related to continuous affect levels (arousal and valence)
         self.fc_dimensional = nn.Linear(8, 2)
 
@@ -127,6 +130,10 @@ class ConvolutionalBranch(nn.Module):
 
         # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
 
+        center_weights = self.centers.weight
+        dist = (x_conv_branch.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+        dist_center = -1 * (dist.sum(2))  # NxC (check)
+
         # Prepare features for Classification & Regression
         x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
         x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
@@ -141,7 +148,7 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, x_conv_branch
+        return discrete_emotion, continuous_affect, dist_center
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -227,7 +234,6 @@ class ESR(nn.Module):
 
         # Class centers
         # self.centers = nn.Parameter(torch.FloatTensor(512, 8))
-        self.centers = nn.Linear(8, 512)
         # nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
 
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
@@ -310,13 +316,10 @@ class ESR(nn.Module):
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, branch_feat = branch(x_shared_representations)
+            output_emotion, output_affect, dist = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            center_weights = self.centers.weight
-            dist = (branch_feat.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
-            dist_out = -1 * (dist.sum(2))  # NxC (check)
-            dist_center.append(dist_out)
+            dist_center.append(dist)
 
         return emotions, affect_values, dist_center
 
