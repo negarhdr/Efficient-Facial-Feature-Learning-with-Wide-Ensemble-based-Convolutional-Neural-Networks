@@ -245,10 +245,10 @@ def main(args):
 
                 # Compute loss
                 loss = 0.0
-                for i_4 in range(net.get_ensemble_size()):
+                '''for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)
+                    loss += criterion(emotions[i_4], labels)'''
 
                 # DDA loss
                 loss += ddaloss(dist_center, labels, 32)
