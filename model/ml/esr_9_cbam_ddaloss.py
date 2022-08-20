@@ -134,11 +134,6 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
         x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
 
-        #  distance to center
-        center_weights = self.centers.weight
-        dist = (x_conv_branch.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
-        dist_center = -1 * (dist.sum(2))  # NxC (check)
-
         # Fully connected layer for expression recognition
         discrete_emotion = self.fc(x_conv_branch)
 
@@ -147,6 +142,12 @@ class ConvolutionalBranch(nn.Module):
 
         # Fully connected layer for affect perception
         continuous_affect = self.fc_dimensional(x_conv_branch)
+
+        #  distance to center
+        center_weights = self.centers(x_conv_branch)
+        # center_weights = self.centers.weight
+        x_conv_branch = (x_conv_branch.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+        dist_center = -1 * (x_conv_branch.sum(2))  # NxC (check)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
         return discrete_emotion, continuous_affect, dist_center
