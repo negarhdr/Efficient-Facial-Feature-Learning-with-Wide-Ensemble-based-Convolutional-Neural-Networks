@@ -186,8 +186,7 @@ def main(args):
 
     # Set optimizer
     optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.centers.parameters(), 'lr': 0.1, 'momentum': 0.9}])
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
 
 
     # Define criterion
@@ -330,8 +329,7 @@ def main(args):
             # Set optimizer for base and the new branch
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
-                                    'momentum': 0.9},
-                                   {'params': net.centers.parameters(), 'lr': 0.1, 'momentum': 0.9}])
+                                    'momentum': 0.9}])
 
             # Set optimizer for the trained branches
             if not args.freeze_trained_branches:
