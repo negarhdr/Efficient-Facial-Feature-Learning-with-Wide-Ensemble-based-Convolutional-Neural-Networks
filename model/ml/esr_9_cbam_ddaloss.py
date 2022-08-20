@@ -144,8 +144,8 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         #  distance to center
-        center_weights = self.centers(x_conv_branch)
-        # center_weights = self.centers.weight
+        # center_weights = self.centers(x_conv_branch)
+        center_weights = self.centers.weight
         x_conv_branch = (x_conv_branch.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
         dist_center = -1 * (x_conv_branch.sum(2))  # NxC (check)
 
