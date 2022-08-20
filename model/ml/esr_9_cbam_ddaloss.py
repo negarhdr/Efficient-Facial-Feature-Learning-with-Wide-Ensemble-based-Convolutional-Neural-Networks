@@ -103,7 +103,7 @@ class ConvolutionalBranch(nn.Module):
         self.fc = nn.Linear(512, 8)
 
         # centers
-        self.centers = nn.Linear(512, 8)
+        self.centers = nn.Linear(8, 512)
 
         # Last, fully-connected layer related to continuous affect levels (arousal and valence)
         self.fc_dimensional = nn.Linear(8, 2)
