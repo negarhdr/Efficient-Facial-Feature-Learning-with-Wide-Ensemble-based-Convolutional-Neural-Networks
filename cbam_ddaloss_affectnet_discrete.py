@@ -29,6 +29,7 @@ import torch
 from os import path, makedirs
 import argparse
 from torch.autograd import Variable
+torch.autograd.set_detect_anomaly(True)
 
 # Modules
 from model.utils import udata, umath
