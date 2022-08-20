@@ -227,7 +227,7 @@ class ESR(nn.Module):
 
         # Class centers
         # self.centers = nn.Parameter(torch.FloatTensor(512, 8))
-        self.centers = nn.Linear(8, 512)
+        # self.centers = nn.Linear(8, 512)
         # nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
 
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
@@ -292,7 +292,7 @@ class ESR(nn.Module):
         for i in range(self.get_ensemble_size()):
             self.convolutional_branches[i].load_state_dict(best_configuration[i + 1])
 
-    def forward(self, x):
+    def forward(self, x, centers):
         """
         Forward method of ESR-9.
 
@@ -313,8 +313,8 @@ class ESR(nn.Module):
             output_emotion, output_affect, branch_feat = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            center_weights = self.centers.weight
-            dist = (branch_feat.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+            # center_weights = self.centers.weight
+            dist = (branch_feat.unsqueeze(1) - centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
             dist_out = -1 * (dist.sum(2))  # NxC (check)
             dist_center.append(dist_out)
 

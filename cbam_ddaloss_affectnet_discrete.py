@@ -28,6 +28,7 @@ import numpy as np
 import torch
 from os import path, makedirs
 import argparse
+from torch.autograd import Variable
 
 # Modules
 from model.utils import udata, umath
@@ -216,6 +217,10 @@ def main(args):
         history_val_loss = [[] for _ in range(net.get_ensemble_size())]
         history_val_acc = [[] for _ in range(net.get_ensemble_size() + 1)]
 
+        dtype = torch.FloatTensor
+        centers = Variable(torch.randn(512, 8).type(dtype), requires_grad=False)
+        # centers = nn.Parameter(torch.FloatTensor(512, 8))
+
         # Training branch
         for epoch in range(max_training_epoch):
             train_loader = DataLoader(train_data, batch_size=32, shuffle=True, num_workers=8)
@@ -223,8 +228,6 @@ def main(args):
             running_loss = 0.0
             running_corrects = [0.0 for _ in range(net.get_ensemble_size())]
             running_updates = 0
-
-            scheduler.step()
 
             for inputs, labels in train_loader:
                 # Get the inputs
@@ -234,7 +237,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, dist_center = net(inputs)
+                emotions, affect_values, dist_center = net(inputs, centers)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -257,6 +260,7 @@ def main(args):
                 running_loss += loss.item()
                 running_updates += 1
 
+            scheduler.step()
             # Statistics
             print('[Branch {:d}, '
                   'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
