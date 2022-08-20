@@ -226,7 +226,7 @@ class ESR(nn.Module):
         self.base.to(self.device)
 
         # Class centers
-        # self.centers = nn.Parameter(torch.FloatTensor(512, 8))
+        self.centers = nn.Parameter(torch.FloatTensor(512, 8))
         # self.centers = nn.Linear(8, 512)
         # nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
 

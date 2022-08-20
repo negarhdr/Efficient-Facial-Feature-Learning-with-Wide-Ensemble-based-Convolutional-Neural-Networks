@@ -178,9 +178,16 @@ def main(args):
     # Send to running device
     net.to_device(device)
 
+    '''dtype = torch.cuda.FloatTensor
+    centers = Variable(torch.randn(512, 8).type(dtype), requires_grad=False)
+    centers = centers.to(device)
+    # centers = nn.Parameter(torch.FloatTensor(512, 8))'''
+
     # Set optimizer
     optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9},
+                           {'params': net.centers.parameters(), 'lr': 0.1, 'momentum': 0.9}])
+
 
     # Define criterion
     criterion = nn.CrossEntropyLoss()
@@ -216,11 +223,6 @@ def main(args):
         history_acc = [[] for _ in range(net.get_ensemble_size())]
         history_val_loss = [[] for _ in range(net.get_ensemble_size())]
         history_val_acc = [[] for _ in range(net.get_ensemble_size() + 1)]
-
-        dtype = torch.cuda.FloatTensor
-        centers = Variable(torch.randn(512, 8).type(dtype), requires_grad=False)
-        centers = centers.to(device)
-        # centers = nn.Parameter(torch.FloatTensor(512, 8))
 
         # Training branch
         for epoch in range(max_training_epoch):
@@ -327,7 +329,8 @@ def main(args):
             # Set optimizer for base and the new branch
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
-                                    'momentum': 0.9}])
+                                    'momentum': 0.9},
+                                   {'params': net.centers.parameters(), 'lr': 0.1, 'momentum': 0.9}])
 
             # Set optimizer for the trained branches
             if not args.freeze_trained_branches:
