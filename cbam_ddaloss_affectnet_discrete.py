@@ -208,7 +208,7 @@ def main(args):
 
     # Define criterion
     criterion_ce = nn.CrossEntropyLoss()
-    criterion_dda = DDA_Loss()
+    criterion_dda = DDA_Loss(device)
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,
