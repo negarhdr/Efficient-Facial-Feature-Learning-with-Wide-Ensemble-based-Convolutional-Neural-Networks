@@ -268,7 +268,7 @@ def main(args):
                     # CE loss
                     loss += criterion_ce(emotions[i_4], labels)
                     # DDA loss
-                    loss += criterion_dda(x_conv, labels)
+                    loss += criterion_dda(x_conv[i_4], labels)
 
                 # Backward
                 loss.backward(retain_graph=True)
