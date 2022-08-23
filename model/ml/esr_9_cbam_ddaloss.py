@@ -103,10 +103,10 @@ class ConvolutionalBranch(nn.Module):
         self.fc = nn.Linear(512, 8)
 
         # centers
-        self.centers = nn.Linear(8, 512)
+        # self.centers = nn.Linear(8, 512)
 
         # Last, fully-connected layer related to continuous affect levels (arousal and valence)
-        self.fc_dimensional = nn.Linear(8, 2)
+        # self.fc_dimensional = nn.Linear(8, 2)
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
@@ -138,21 +138,19 @@ class ConvolutionalBranch(nn.Module):
         discrete_emotion = self.fc(x_conv_branch)
 
         # Application of the ReLU function to neurons related to discrete emotion labels
-        x_conv_branch = F.relu(discrete_emotion)
+        # x_conv_branch = F.relu(discrete_emotion)
+        # continuous_affect = self.fc_dimensional(x_conv_branch)
 
-        # Fully connected layer for affect perception
-        continuous_affect = self.fc_dimensional(x_conv_branch)
-
-        #  distance to center
+        '''# distance to center
         # center_weights = self.centers(x_conv_branch)
         center_weights = self.centers.weight
         x_conv_branch = (x_conv_branch.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
-        dist_center = -1 * (x_conv_branch.sum(2))  # NxC (check)
+        dist_center = -1 * (x_conv_branch.sum(2))  # NxC (check)'''
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, dist_center
+        return discrete_emotion, x_conv_branch
 
-    def forward_to_last_conv_layer(self, x_shared_representations):
+    '''def forward_to_last_conv_layer(self, x_shared_representations):
         """
         Propagates activations to the last convolutional layer of the architecture.
         This method is used to generate saliency maps with the Grad-CAM algorithm (Selvaraju et al., 2017).
@@ -196,7 +194,7 @@ class ConvolutionalBranch(nn.Module):
         x_to_output_layer = self.fc(x_to_output_layer)
 
         # Returns activations of the discrete emotion output layer
-        return x_to_output_layer
+        return x_to_output_layer'''
 
 
 class ESR(nn.Module):
@@ -310,18 +308,16 @@ class ESR(nn.Module):
 
         # List of emotions and affect values from the ensemble
         emotions = []
-        affect_values = []
-        dist_center = []
+        x_conv = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, dist = branch(x_shared_representations)
+            output_emotion, x_conv_branch = branch(x_shared_representations)
             emotions.append(output_emotion)
-            affect_values.append(output_affect)
-            dist_center.append(dist)
+            x_conv.append(x_conv_branch)
 
-        return emotions, affect_values, dist_center
+        return emotions, x_conv
 

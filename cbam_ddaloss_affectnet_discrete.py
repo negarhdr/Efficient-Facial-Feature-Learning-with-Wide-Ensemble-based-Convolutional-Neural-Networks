@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -43,7 +43,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _, _ = val_model_eval(inputs_eval)
+        outputs_eval, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -119,7 +119,27 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
+
 class DDA_Loss(nn.Module):
+    def __init__(self, device, num_class=8, feat_dim=512, batch_size=32):
+        super(DDA_Loss, self).__init__()
+        self.num_class = num_class
+        self.feat_dim = feat_dim
+        self.batch_size = batch_size
+        self.log_softmax = nn.LogSoftmax(dim=1)
+        self.nllloss = nn.NLLLoss()
+        self.device = device
+        self.centers = nn.Parameter(torch.randn(self.num_class, self.feat_dim).to(device))
+
+    def forward(self, x, labels):
+        x_conv_branch = (x.unsqueeze(1) - self.centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+        dist_center = -1 * (x_conv_branch.sum(2))
+        scores = self.log_softmax(dist_center)
+        ddaloss = self.nllloss(scores, labels) / self.batch_size / 2.0
+        return ddaloss
+
+
+'''class DDA_Loss(nn.Module):
     def __init__(self, ):
         super(DDA_Loss, self).__init__()
         self.log_softmax = nn.LogSoftmax(dim=1)
@@ -129,7 +149,7 @@ class DDA_Loss(nn.Module):
         dist = dist_center
         scores = self.log_softmax(dist)
         ddaloss = self.nllloss(scores, label) / batch_size / 2.0
-        return ddaloss
+        return ddaloss'''
 
 '''class CenterLoss(nn.Module):
     def __init__(self, ):
@@ -187,8 +207,8 @@ def main(args):
 
 
     # Define criterion
-    criterion = nn.CrossEntropyLoss()
-    ddaloss = DDA_Loss()
+    criterion_ce = nn.CrossEntropyLoss()
+    criterion_dda = DDA_Loss()
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,
@@ -237,7 +257,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, dist_center = net(inputs)
+                emotions, x_conv = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -245,9 +265,10 @@ def main(args):
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)
+                    # CE loss
+                    loss += criterion_ce(emotions[i_4], labels)
                     # DDA loss
-                    loss += ddaloss(dist_center[i_4], labels, 32)
+                    loss += criterion_dda(x_conv, labels)
 
                 # Backward
                 loss.backward(retain_graph=True)
@@ -270,7 +291,7 @@ def main(args):
             # Validation
             if ((epoch % args.validation_interval) == 0) or ((epoch + 1) == max_training_epoch):
                 net.eval()
-                val_loss, val_corrects = evaluate(net, val_loader, criterion, device)
+                val_loss, val_corrects = evaluate(net, val_loader, criterion_ce, device)
                 print('Validation - [Branch {:d}, '
                       'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
                                                                        epoch + 1,
@@ -342,7 +363,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/DDALoss")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_AffectNet_Discrete_ddaloss_celoss")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_ddaloss")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
