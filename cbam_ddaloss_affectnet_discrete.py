@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -285,7 +285,7 @@ def main(args):
                     loss += criterion_dda(x_conv[i_4], labels)
 
                 # branch_Div
-                loss += criterion_div(attn_heads).det_div
+                # loss += criterion_div(attn_heads).det_div
 
                 # Backward
                 loss.backward(retain_graph=True)
@@ -381,7 +381,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/DDALoss")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_ddaloss_div")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_ddaloss")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
