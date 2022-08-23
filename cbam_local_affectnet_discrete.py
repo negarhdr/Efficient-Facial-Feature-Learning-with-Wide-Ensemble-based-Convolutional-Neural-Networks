@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -41,7 +41,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _, _ = val_model_eval(inputs_eval)
+        _, _, outputs_eval, _, _, _, _, _, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -265,21 +265,27 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, attn_heads = net(inputs)
-                confs_preds = [torch.max(o, 1) for o in emotions]
+                local_emotions, global_emotions, combined_emotion, lge_emotion, \
+                attn_global, attn_11, attn_12, attn_21, attn_22 = net(inputs)
+                confs_preds = [torch.max(o, 1) for o in combined_emotion]  # try also with lge_emotion
 
                 # Compute loss
                 loss = 0.0
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)
-                    # loss += focal_loss(emotions[i_4], labels)
+                    loss_local = criterion(local_emotions[i_4], labels)
+                    loss_global = criterion(global_emotions[i_4], labels)
+                    loss_combined = criterion(combined_emotion[i_4], labels)
+                    loss += (loss_local + loss_global + loss_combined)
 
                 if net.get_ensemble_size() > 1:
-                    div = diversity(attn_heads).det_div
-                    loss += div
-                    # print('div', div)
+                    div_11 = diversity(attn_11).det_div
+                    div_12 = diversity(attn_12).det_div
+                    div_21 = diversity(attn_21).det_div
+                    div_22 = diversity(attn_22).det_div
+                    div_g = diversity(attn_global).det_div
+                    loss += (div_11 + div_12 + div_21 + div_22 + div_g)
 
                 # Backward
                 loss.backward()
@@ -372,8 +378,8 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_AffectNet_Discrete_bb_local_global_wofocal_detdiv")
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/MANet")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_local_global_detdiv_comb")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)

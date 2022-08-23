@@ -122,17 +122,14 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 class DDA_Loss(nn.Module):
     def __init__(self, ):
         super(DDA_Loss, self).__init__()
-        self.totloss = 0
         self.log_softmax = nn.LogSoftmax(dim=1)
         self.nllloss = nn.NLLLoss()
 
     def forward(self, dist_center, label, batch_size):
-        for i in range(len(dist_center)):
-            dist = dist_center[i]
-            scores = self.log_softmax(dist)
-            ddaloss = self.nllloss(scores, label) / batch_size / 2.0
-            self.totloss += ddaloss
-        return self.totloss
+        dist = dist_center
+        scores = self.log_softmax(dist)
+        ddaloss = self.nllloss(scores, label) / batch_size / 2.0
+        return ddaloss
 
 '''class CenterLoss(nn.Module):
     def __init__(self, ):
@@ -245,13 +242,12 @@ def main(args):
 
                 # Compute loss
                 loss = 0.0
-                '''for i_4 in range(net.get_ensemble_size()):
+                for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)'''
-
-                # DDA loss
-                loss += ddaloss(dist_center, labels, 32)
+                    loss += criterion(emotions[i_4], labels)
+                    # DDA loss
+                    loss += ddaloss(dist_center[i_4], labels, 32)
 
                 # Backward
                 loss.backward(retain_graph=True)

@@ -165,10 +165,9 @@ class ConvolutionalBranch(nn.Module):
         self.cbam4 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
 
         # Second last, fully-connected layer related to discrete emotion labels
-        self.fc = nn.Linear(512, 8)
-
-        # Last, fully-connected layer related to continuous affect levels (arousal and valence)
-        self.fc_dimensional = nn.Linear(8, 2)
+        self.fc_local = nn.Linear(512, 8)
+        self.fc_global = nn.Linear(512, 8)
+        self.fc_local_global = nn.Linear(512, 8)
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
@@ -217,14 +216,18 @@ class ConvolutionalBranch(nn.Module):
 
         x_conv_out_1 = torch.cat([x_conv_branch_p11, x_conv_branch_p11], dim=3)
         x_conv_out_2 = torch.cat([x_conv_branch_p21, x_conv_branch_p22], dim=3)
-        x_conv_out = torch.cat([x_conv_out_1, x_conv_out_2], dim=2)
+        x_conv_local = torch.cat([x_conv_out_1, x_conv_out_2], dim=2)
 
         attn_mat_1 = torch.cat([attn_mat_p11, attn_mat_p12], dim=3)
         attn_mat_2 = torch.cat([attn_mat_p21, attn_mat_p22], dim=3)
-        attn_mat_out = torch.cat([attn_mat_1, attn_mat_2], dim=2)
+        attn_mat_local = torch.cat([attn_mat_1, attn_mat_2], dim=2)
 
-        # Global
-        # patch_11
+        # Prepare features for Classification
+        x_conv_local = self.global_pool(x_conv_local)  # N x 512 x 1 x 1
+        x_conv_local = x_conv_local.view(-1, 512)  # N x 512
+        discrete_emotion_local = self.fc_local(x_conv_local)
+
+        ################ Global  #####################
         x_conv_global = F.relu(self.bn1(self.conv1(x)))
         x_conv_global, _ = self.cbam1(x_conv_global)
         x_conv_global = self.pool(F.relu(self.bn2(self.conv2(x_conv_global))))
@@ -232,29 +235,30 @@ class ConvolutionalBranch(nn.Module):
         x_conv_global = F.relu(self.bn3(self.conv3(x_conv_global)))
         x_conv_global, _ = self.cbam3(x_conv_global)
         x_conv_global = F.relu(self.bn4(self.conv4(x_conv_global)))
-        x_conv_global, attn_mat = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
+        x_conv_global, attn_mat_global = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
 
-        # x_conv_branch = self.bn5(x_conv_out + x_conv_global) # check if residual block needs relu and bn?
-        x_conv_branch = x_conv_out + x_conv_global
-        # x_conv_branch = F.relu(self.bn5(self.conv5(x_conv_out + x_conv_global)))
+        # Prepare features for Classification
+        x_conv_global = self.global_pool(x_conv_global)  # N x 512 x 1 x 1
+        x_conv_global = x_conv_global.view(-1, 512)  # N x 512
+        discrete_emotion_global = self.fc_global(x_conv_global)
+
+        discrete_emotion_lge = discrete_emotion_local + discrete_emotion_global  # the sum of FC local and global (based on MA-Net paper)
+
+        ########### Combined global and local ##############
+        # x_conv_branch = self.bn5(x_conv_local + x_conv_global)  # check if residual block needs relu and bn?
+        # x_conv_branch = x_conv_local + x_conv_global
+        x_conv_combined = F.relu(self.bn5(self.conv5(x_conv_local + x_conv_global)))
 
         # Prepare features for Classification & Regression
-        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
-        x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
-
-        # Fully connected layer for expression recognition
-        discrete_emotion = self.fc(x_conv_branch)
-
-        # Application of the ReLU function to neurons related to discrete emotion labels
-        x_conv_branch = F.relu(discrete_emotion)
-
-        # Fully connected layer for affect perception
-        continuous_affect = self.fc_dimensional(x_conv_branch)
+        x_conv_combined = self.global_pool(x_conv_combined)  # N x 512 x 1 x 1
+        x_conv_combined = x_conv_combined.view(-1, 512)  # N x 512
+        discrete_emotion_combined = self.fc_local_global(x_conv_combined)  # the output of FC when the local and global features are summed up!
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_mat_out
+        return discrete_emotion_local, discrete_emotion_global, discrete_emotion_combined, discrete_emotion_lge, \
+               attn_mat_global, attn_mat_p11, attn_mat_p12, attn_mat_p21, attn_mat_p22
 
-    def forward_to_last_conv_layer(self, x_shared_representations):
+    '''def forward_to_last_conv_layer(self, x_shared_representations):
         """
         Propagates activations to the last convolutional layer of the architecture.
         This method is used to generate saliency maps with the Grad-CAM algorithm (Selvaraju et al., 2017).
@@ -298,7 +302,7 @@ class ConvolutionalBranch(nn.Module):
         x_to_output_layer = self.fc(x_to_output_layer)
 
         # Returns activations of the discrete emotion output layer
-        return x_to_output_layer
+        return x_to_output_layer'''
 
 
 class ESR(nn.Module):
@@ -407,9 +411,15 @@ class ESR(nn.Module):
         """
 
         # List of emotions and affect values from the ensemble
-        emotions = []
-        affect_values = []
-        heads = []
+        local_emotions = []
+        global_emotions = []
+        combined_emotion = []
+        lge_emotion = []
+        attn_head_global = []
+        attn_head_11 = []
+        attn_head_12 = []
+        attn_head_21 = []
+        attn_head_22 = []
 
         # Get shared representations
         x_shared_representations = self.base(x)  # 32x128x20x20
@@ -421,12 +431,23 @@ class ESR(nn.Module):
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(x_shared_representations, patch_11, patch_12, patch_21, patch_22)
-            emotions.append(output_emotion)
-            affect_values.append(output_affect)
-            heads.append(attn_mat[:, 0, :, :])
-        attn_heads = torch.stack(heads)  #.permute([1, 0, 2])
-        # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
+            discrete_emotion_local, discrete_emotion_global, discrete_emotion_combined, discrete_emotion_lge, attng, \
+            attn11, attn12, attn21, attn22 = branch(x_shared_representations, patch_11, patch_12, patch_21, patch_22)
+            local_emotions.append(discrete_emotion_local)
+            global_emotions.append(discrete_emotion_global)
+            combined_emotion.append(discrete_emotion_combined)
+            lge_emotion.append(discrete_emotion_lge)
+            attn_head_global.append(attng)
+            attn_head_11.append(attn11)
+            attn_head_12.append(attn12)
+            attn_head_21.append(attn21)
+            attn_head_22.append(attn22)
+        attn_global = torch.stack(attn_head_global)  #.permute([1, 0, 2])  # num_branches x batch_size x H x W
+        attn_11 = torch.stack(attn_head_11)
+        attn_12 = torch.stack(attn_head_12)
+        attn21 = torch.stack(attn_head_21)
+        attn22 = torch.stack(attn_head_22)
 
-        return emotions, affect_values, attn_heads
+        return local_emotions, global_emotions, combined_emotion, lge_emotion, attn_global, attn_11, attn_12, attn21, \
+               attn22
 
