@@ -151,13 +151,13 @@ class ConvolutionalBranch(nn.Module):
         self.conv2 = nn.Conv2d(128, 256, 3, 1)
         self.conv3 = nn.Conv2d(256, 256, 3, 1, 1)
         self.conv4 = nn.Conv2d(256, 512, 3, 1, 1)
-        self.conv5 = nn.Conv2d(512, 512, 1, 1, 1)
+        # self.conv5 = nn.Conv2d(512, 512, 1, 1, 1)
 
         self.bn1 = nn.BatchNorm2d(128)
         self.bn2 = nn.BatchNorm2d(256)
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(512)
-        self.bn5 = nn.BatchNorm2d(512)
+        # self.bn5 = nn.BatchNorm2d(512)
 
         self.cbam1 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam2 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
@@ -167,7 +167,7 @@ class ConvolutionalBranch(nn.Module):
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc_local = nn.Linear(512, 8)
         self.fc_global = nn.Linear(512, 8)
-        self.fc_local_global = nn.Linear(512, 8)
+        # self.fc_local_global = nn.Linear(512, 8)
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
@@ -244,7 +244,7 @@ class ConvolutionalBranch(nn.Module):
 
         discrete_emotion_lge = discrete_emotion_local + discrete_emotion_global  # the sum of FC local and global (based on MA-Net paper)
 
-        ########### Combined global and local ##############
+        '''########### Combined global and local ##############
         # x_conv_branch = self.bn5(x_conv_local + x_conv_global)  # check if residual block needs relu and bn?
         # x_conv_branch = x_conv_local + x_conv_global
         x_conv_combined = F.relu(self.bn5(self.conv5(x_conv_local_ + x_conv_global_)))
@@ -252,10 +252,10 @@ class ConvolutionalBranch(nn.Module):
         # Prepare features for Classification & Regression
         x_conv_combined = self.global_pool(x_conv_combined)  # N x 512 x 1 x 1
         x_conv_combined = x_conv_combined.view(-1, 512)  # N x 512
-        discrete_emotion_combined = self.fc_local_global(x_conv_combined)  # the output of FC when the local and global features are summed up!
+        discrete_emotion_combined = self.fc_local_global(x_conv_combined)  # the output of FC when the local and global features are summed up!'''
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion_local, discrete_emotion_global, discrete_emotion_combined, discrete_emotion_lge, \
+        return discrete_emotion_local, discrete_emotion_global, discrete_emotion_lge, \
                attn_mat_global, attn_mat_p11, attn_mat_p12, attn_mat_p21, attn_mat_p22
 
     '''def forward_to_last_conv_layer(self, x_shared_representations):
@@ -413,7 +413,7 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         local_emotions = []
         global_emotions = []
-        combined_emotion = []
+        # combined_emotion = []
         lge_emotion = []
         attn_head_global = []
         attn_head_11 = []
@@ -431,11 +431,11 @@ class ESR(nn.Module):
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            discrete_emotion_local, discrete_emotion_global, discrete_emotion_combined, discrete_emotion_lge, attng, \
+            discrete_emotion_local, discrete_emotion_global, discrete_emotion_lge, attng, \
             attn11, attn12, attn21, attn22 = branch(x_shared_representations, patch_11, patch_12, patch_21, patch_22)
             local_emotions.append(discrete_emotion_local)
             global_emotions.append(discrete_emotion_global)
-            combined_emotion.append(discrete_emotion_combined)
+            # combined_emotion.append(discrete_emotion_combined)
             lge_emotion.append(discrete_emotion_lge)
             attn_head_global.append(attng)
             attn_head_11.append(attn11)
@@ -448,6 +448,5 @@ class ESR(nn.Module):
         attn21 = torch.stack(attn_head_21)
         attn22 = torch.stack(attn_head_22)
 
-        return local_emotions, global_emotions, combined_emotion, lge_emotion, attn_global, attn_11, attn_12, attn21, \
-               attn22
+        return local_emotions, global_emotions, lge_emotion, attn_global, attn_11, attn_12, attn21, attn22
 
