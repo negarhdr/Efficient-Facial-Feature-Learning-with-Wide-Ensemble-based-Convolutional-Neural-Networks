@@ -216,14 +216,14 @@ class ConvolutionalBranch(nn.Module):
 
         x_conv_out_1 = torch.cat([x_conv_branch_p11, x_conv_branch_p11], dim=3)
         x_conv_out_2 = torch.cat([x_conv_branch_p21, x_conv_branch_p22], dim=3)
-        x_conv_local = torch.cat([x_conv_out_1, x_conv_out_2], dim=2)
+        x_conv_local_ = torch.cat([x_conv_out_1, x_conv_out_2], dim=2)
 
         attn_mat_1 = torch.cat([attn_mat_p11, attn_mat_p12], dim=3)
         attn_mat_2 = torch.cat([attn_mat_p21, attn_mat_p22], dim=3)
         attn_mat_local = torch.cat([attn_mat_1, attn_mat_2], dim=2)
 
         # Prepare features for Classification
-        x_conv_local = self.global_pool(x_conv_local)  # N x 512 x 1 x 1
+        x_conv_local = self.global_pool(x_conv_local_)  # N x 512 x 1 x 1
         x_conv_local = x_conv_local.view(-1, 512)  # N x 512
         discrete_emotion_local = self.fc_local(x_conv_local)
 
@@ -235,10 +235,10 @@ class ConvolutionalBranch(nn.Module):
         x_conv_global = F.relu(self.bn3(self.conv3(x_conv_global)))
         x_conv_global, _ = self.cbam3(x_conv_global)
         x_conv_global = F.relu(self.bn4(self.conv4(x_conv_global)))
-        x_conv_global, attn_mat_global = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
+        x_conv_global_, attn_mat_global = self.cbam4(x_conv_global)  # attn_mat of size 32x1x6x6
 
         # Prepare features for Classification
-        x_conv_global = self.global_pool(x_conv_global)  # N x 512 x 1 x 1
+        x_conv_global = self.global_pool(x_conv_global_)  # N x 512 x 1 x 1
         x_conv_global = x_conv_global.view(-1, 512)  # N x 512
         discrete_emotion_global = self.fc_global(x_conv_global)
 
@@ -247,7 +247,7 @@ class ConvolutionalBranch(nn.Module):
         ########### Combined global and local ##############
         # x_conv_branch = self.bn5(x_conv_local + x_conv_global)  # check if residual block needs relu and bn?
         # x_conv_branch = x_conv_local + x_conv_global
-        x_conv_combined = F.relu(self.bn5(self.conv5(x_conv_local + x_conv_global)))
+        x_conv_combined = F.relu(self.bn5(self.conv5(x_conv_local_ + x_conv_global_)))
 
         # Prepare features for Classification & Regression
         x_conv_combined = self.global_pool(x_conv_combined)  # N x 512 x 1 x 1
