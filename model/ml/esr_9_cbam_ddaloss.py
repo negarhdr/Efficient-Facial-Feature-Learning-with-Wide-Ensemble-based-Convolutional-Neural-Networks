@@ -309,7 +309,7 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         x_conv = []
-        attn_heads = []
+        heads = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
@@ -319,7 +319,8 @@ class ESR(nn.Module):
             output_emotion, x_conv_branch, attn_head = branch(x_shared_representations)
             emotions.append(output_emotion)
             x_conv.append(x_conv_branch)
-            attn_heads.append(attn_head)
+            heads.append(attn_head)
+        attn_heads = torch.stack(heads)
 
         return emotions, x_conv, attn_heads
 
