@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -43,7 +43,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _ = val_model_eval(inputs_eval)
+        outputs_eval, _, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -139,17 +139,30 @@ class DDA_Loss(nn.Module):
         return ddaloss
 
 
-'''class DDA_Loss(nn.Module):
+class BranchDiversity(nn.Module):
     def __init__(self, ):
-        super(DDA_Loss, self).__init__()
-        self.log_softmax = nn.LogSoftmax(dim=1)
-        self.nllloss = nn.NLLLoss()
+        super(BranchDiversity, self).__init__()
+        self.direct_div = 0
+        self.det_div = 0
+        self.logdet_div = 0
 
-    def forward(self, dist_center, label, batch_size):
-        dist = dist_center
-        scores = self.log_softmax(dist)
-        ddaloss = self.nllloss(scores, label) / batch_size / 2.0
-        return ddaloss'''
+    def forward(self, x):  # num_branch x batch_size x 6 x 6
+        num_branches = x.size(0)
+        gamma = 10
+        snm = torch.zeros((num_branches, num_branches))
+
+        # diversity between spatial attention heads
+        for i in range(num_branches):
+            for j in range(num_branches):
+                if i != j:
+                    diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
+                    diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                    snm[i, j] = diff
+        self.direct_div = torch.sum(snm)
+        self.det_div = -1 * torch.det(snm)
+        self.logdet_div = -1 * torch.logdet(snm)
+
+        return self
 
 '''class CenterLoss(nn.Module):
     def __init__(self, ):
@@ -209,6 +222,7 @@ def main(args):
     # Define criterion
     criterion_ce = nn.CrossEntropyLoss()
     criterion_dda = DDA_Loss(device)
+    criterion_div = BranchDiversity()
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,
@@ -257,7 +271,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, x_conv = net(inputs)
+                emotions, x_conv, attn_heads = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -269,6 +283,9 @@ def main(args):
                     loss += criterion_ce(emotions[i_4], labels)
                     # DDA loss
                     loss += criterion_dda(x_conv[i_4], labels)
+
+                # branch_Div
+                loss += criterion_div(attn_heads).det_div
 
                 # Backward
                 loss.backward(retain_graph=True)
@@ -363,7 +380,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/DDALoss")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_ddaloss")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_ddaloss_div")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)

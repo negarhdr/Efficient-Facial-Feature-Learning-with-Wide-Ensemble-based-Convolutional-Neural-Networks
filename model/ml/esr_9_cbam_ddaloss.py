@@ -148,7 +148,7 @@ class ConvolutionalBranch(nn.Module):
         dist_center = -1 * (x_conv_branch.sum(2))  # NxC (check)'''
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, x_conv_branch
+        return discrete_emotion, x_conv_branch, attn_mat
 
     '''def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -309,15 +309,17 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         x_conv = []
+        attn_heads = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, x_conv_branch = branch(x_shared_representations)
+            output_emotion, x_conv_branch, attn_head = branch(x_shared_representations)
             emotions.append(output_emotion)
             x_conv.append(x_conv_branch)
+            attn_heads.append(attn_head)
 
-        return emotions, x_conv
+        return emotions, x_conv, attn_heads
 
