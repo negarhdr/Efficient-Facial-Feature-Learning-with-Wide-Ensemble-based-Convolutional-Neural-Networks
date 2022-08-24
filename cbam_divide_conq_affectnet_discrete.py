@@ -255,18 +255,19 @@ def main(args):
                 loss_local = []
                 loss_global = 0.0
                 div_sp = 0.0
-
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss_global += criterion(emotions[i_4][0], labels)  # added index [0] to emotions
-                    print(labels[0])
-                    if i_4 == 0:
-                        for i in range(8):
-                            loss_local.append(criterion(emotions[i_4][i+1], labels))
-                    else:
-                        for i in range(8):
-                            loss_local[i] += criterion(emotions[i_4][i+1], labels)
+
+                    for i in range(8):
+                        lbls_idx = (labels == i).nonzero(as_tuple=True)[0]
+                        lbls_local = labels[lbls_idx]
+                        emotions_local = emotions[i_4][i + 1][lbls_idx]
+                        if len(loss_local) == 0:
+                            loss_local.append(criterion(emotions_local, lbls_local))
+                        else:
+                            loss_local[i] += criterion(emotions[i_4][i + 1], labels)
 
                 if net.get_ensemble_size() > 1:
                     div_sp = diversity(attn_sp, type='spatial').det_div
