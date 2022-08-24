@@ -103,7 +103,7 @@ class SpatialGate(nn.Module):
         ### added by me
         feat_dim = x.shape[1]
         masked_ch_features = self.avg_pool2d(x).view(-1, feat_dim)
-        masked_sp_features = (x * scale)
+        masked_sp_features = x * scale
         attn_sp = self.tanh(masked_sp_features)
         attn_ch = self.tanh(masked_ch_features)
         # attn_mask = torch.sigmoid(x_out)  # this is the one I was using for diversity until now
