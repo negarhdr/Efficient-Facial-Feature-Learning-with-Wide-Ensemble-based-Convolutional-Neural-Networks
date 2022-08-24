@@ -287,10 +287,10 @@ def main(args):
                     loss += criterion(emotions[i_4], labels)
 
                 if net.get_ensemble_size() > 1:
-                    # div_sp = diversity(attn_sp, type='spatial').det_div
-                    # loss += div_sp
-                    div_ch = diversity(attn_sp, type='channel').det_div
-                    loss += div_ch
+                    div_sp = diversity(attn_sp, type='spatial').det_div
+                    loss += div_sp
+                    # div_ch = diversity(attn_sp, type='channel').det_div
+                    # loss += div_ch
 
                 # Backward
                 loss.backward()
