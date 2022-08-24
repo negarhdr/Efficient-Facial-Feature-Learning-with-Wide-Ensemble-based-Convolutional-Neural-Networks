@@ -263,11 +263,11 @@ def main(args):
                     for i in range(8):
                         lbls_idx = (labels == i).nonzero(as_tuple=True)[0]
                         lbls_local = labels[lbls_idx]
-                        emotions_local = emotions[i_4][i + 1][lbls_idx]
+                        emotions_local = emotions[i_4][i+1][lbls_idx]
                         if len(loss_local) == 0:
                             loss_local.append(criterion(emotions_local, lbls_local))
                         else:
-                            loss_local[i] += criterion(emotions[i_4][i + 1], labels)
+                            loss_local[i] += criterion(emotions_local, lbls_local)
 
                 if net.get_ensemble_size() > 1:
                     div_sp = diversity(attn_sp, type='spatial').det_div
