@@ -264,7 +264,7 @@ def main(args):
                         lbls_idx = (labels == i).nonzero(as_tuple=True)[0]
                         lbls_local = labels[lbls_idx]
                         emotions_local = emotions[i_4][i+1][lbls_idx]
-                        if len(loss_local) == 0:
+                        if i_4 == 0:
                             loss_local.append(criterion(emotions_local, lbls_local))
                         else:
                             loss_local[i] += criterion(emotions_local, lbls_local)
