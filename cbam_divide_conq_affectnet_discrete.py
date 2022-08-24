@@ -236,8 +236,6 @@ def main(args):
             running_corrects = [0.0 for _ in range(net.get_ensemble_size())]
             running_updates = 0
 
-            scheduler.step()
-
             for inputs, labels in train_loader:
                 # Get the inputs
                 inputs, labels = inputs.to(device), labels.to(device)
@@ -282,7 +280,7 @@ def main(args):
 
                 # Optimize
                 optimizer.step()
-
+                scheduler.step()
                 # Save loss
                 running_loss += loss_global.item()
                 running_updates += 1
