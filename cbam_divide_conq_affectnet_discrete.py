@@ -260,6 +260,7 @@ def main(args):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss_global += criterion(emotions[i_4][0], labels)  # added index [0] to emotions
+                    print(labels[0])
                     if i_4 == 0:
                         for i in range(8):
                             loss_local.append(criterion(emotions[i_4][i+1], labels))
