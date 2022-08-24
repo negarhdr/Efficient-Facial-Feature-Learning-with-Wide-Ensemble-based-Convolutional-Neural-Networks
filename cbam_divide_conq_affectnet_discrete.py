@@ -276,11 +276,11 @@ def main(args):
                 # Backward
                 if epoch % 10 == 0:
                     loss_global += div_sp
-                    loss_global.backward()
+                    loss_global.backward(retain_graph=True)
                 else:
                     for i in range(8):
                         loss_local[i] += div_sp
-                        loss_local[i].backward()
+                        loss_local[i].backward(retain_graph=True)
 
                 # Optimize
                 optimizer.step()
