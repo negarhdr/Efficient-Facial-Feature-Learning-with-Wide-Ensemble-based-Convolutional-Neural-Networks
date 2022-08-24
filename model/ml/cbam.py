@@ -90,7 +90,9 @@ class SpatialGate(nn.Module):
         kernel_size = 7
         self.compress = ChannelPool()
         self.spatial = BasicConv(2, 1, kernel_size, stride=1, padding=(kernel_size-1) // 2, relu=False)
-        self.avg_pool2d = nn.AdaptiveAvgPool2d(1)  # added by me
+        # added by me
+        self.avg_pool2d = nn.AdaptiveAvgPool2d(1)
+        self.tanh = torch.nn.Tanh()
 
     def forward(self, x):   # x shape is NxCxHxW
         x_compress = self.compress(x)   # Shape: Nx2xHxW
@@ -102,9 +104,8 @@ class SpatialGate(nn.Module):
         feat_dim = x.shape[1]
         masked_ch_features = self.avg_pool2d(x).view(-1, feat_dim)
         masked_sp_features = (x * scale)
-        print(masked_sp_features.shape)
-        attn_sp = torch.nn.Tanh(masked_sp_features)
-        attn_ch = torch.nn.Tanh(masked_ch_features)
+        attn_sp = self.tanh(masked_sp_features)
+        attn_ch = self.tanh(masked_ch_features)
         # attn_mask = torch.sigmoid(x_out)  # this is the one I was using for diversity until now
         return masked_sp_features, attn_sp, attn_ch # Shape: NxCxHxW
 
