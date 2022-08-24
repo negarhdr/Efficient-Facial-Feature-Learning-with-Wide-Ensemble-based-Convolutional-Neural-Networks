@@ -103,7 +103,7 @@ class SpatialGate(nn.Module):
         masked_ch_features = self.avg_pool2d(x).view(-1, feat_dim)
         masked_sp_features = x * scale
         # attn_mask = torch.sigmoid(x_out)  # this is the one I was using for diversity until now
-        return masked_sp_features, torch.nn.Tanh(masked_sp_features), torch.nn.Tanh(masked_ch_features)  # Shape: NxCxHxW
+        return masked_sp_features, torch.nn.Tanh(masked_ch_features), torch.nn.Tanh(masked_ch_features)  # Shape: NxCxHxW
 
 
 # If pool_types = ['avg'], no_spatial=True, then it is SE method
