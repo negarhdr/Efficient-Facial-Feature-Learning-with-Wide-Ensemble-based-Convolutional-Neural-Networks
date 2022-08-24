@@ -40,13 +40,17 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
     running_val_steps = [0 for _ in range(val_model_eval.get_ensemble_size())]
 
     for inputs_eval, labels_eval in val_loader_eval:
+        global_outputs_eval = []
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
         outputs_eval, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
+        for i in range(outputs_eval):
+            global_outputs_eval.append(outputs_eval[i][0])
+
         # Ensemble prediction
-        overall_preds = torch.zeros(outputs_eval[0].size()).to(device_to_process)  # size: batchsize * 8
-        for o_eval, outputs_per_branch_eval in enumerate(outputs_eval, 0):  # go through the list and take the output of each branch which is of size batchsize*8
+        overall_preds = torch.zeros(global_outputs_eval[0].size()).to(device_to_process)  # size: batchsize * 8
+        for o_eval, outputs_per_branch_eval in enumerate(global_outputs_eval, 0):  # go through the list and take the output of each branch which is of size batchsize*8
             _, preds_eval = torch.max(outputs_per_branch_eval, 1)  # preds_eval is the indices of max value for each sample so it is an array of size torch.size([batchsize])
 
             running_val_corrects[o_eval] += torch.sum(preds_eval == labels_eval).cpu().numpy()  # o_eval is the branch index
