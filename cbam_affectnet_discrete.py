@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -42,7 +42,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval, _, _ = val_model_eval(inputs_eval)
+        outputs_eval, _, _, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
         # Ensemble prediction
@@ -125,25 +125,43 @@ class BranchDiversity(nn.Module):
         self.det_div = 0
         self.logdet_div = 0
 
-    def forward(self, x):  # num_branch x batch_size x 6 x 6
+    def forward(self, x, type='spatial'):
+
         num_branches = x.size(0)
         gamma = 10
         snm = torch.zeros((num_branches, num_branches))
 
-        # diversity between spatial attention heads
-        for i in range(num_branches):
-            for j in range(num_branches):
-                if i != j:
-                    diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
-                    diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
-                    snm[i, j] = diff
-        self.direct_div = torch.sum(snm)
-        self.det_div = -1 * torch.det(snm)
-        self.logdet_div = -1 * torch.logdet(snm)
+        ############# Spatial attn diversity #############
+        if type == 'spatial': # num_branch x batch_size x 6 x 6
+            # diversity between spatial attention heads
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    if i != j:
+                        diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] = diff
+            self.direct_div = torch.sum(snm)
+            self.det_div = -1 * torch.det(snm)
+            self.logdet_div = -1 * torch.logdet(snm)
+
+        ############# Channel attn diversity #############
+        elif type == 'channel': # num_branch x batch_size x 512
+            # diversity between channels of attention heads
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    if i != j:
+                        diff = torch.exp(
+                            -1 * gamma * torch.sum(torch.square(x[i, :, :] - x[j, :, :]), 1))  # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] = diff
+            self.direct_div = torch.sum(snm)
+            self.det_div = -1 * torch.det(snm)
+            self.logdet_div = -1 * torch.logdet(snm)
 
         return self
 
-class PixelDiversity(nn.Module):
+
+'''class PixelDiversity(nn.Module):
     def __init__(self, ):
         super(PixelDiversity, self).__init__()
         self.direct_div = 0
@@ -169,7 +187,7 @@ class PixelDiversity(nn.Module):
         self.det_div = -1 * torch.det(snm)
         self.logdet_div = -1 * torch.logdet(snm)
 
-        return self
+        return self'''
 
 
 def main(args):
@@ -258,7 +276,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, attn_heads = net(inputs)
+                emotions, affect_values, attn_sp, attn_ch = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -269,9 +287,10 @@ def main(args):
                     loss += criterion(emotions[i_4], labels)
 
                 if net.get_ensemble_size() > 1:
-                    div = diversity(attn_heads).det_div
-                    loss += div
-                    # print('div', div)
+                    div_sp = diversity(attn_sp, type='spatial').det_div
+                    div_ch = diversity(attn_sp, type='channel').det_div
+                    loss += div_sp
+                    loss += div_ch
 
                 # Backward
                 loss.backward()
@@ -364,8 +383,8 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/attn_test2")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_9_base_branch_AffectNet_Discrete_detdiv")
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/Attn")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_9_bb_sp_ch_detdiv")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)

@@ -90,13 +90,20 @@ class SpatialGate(nn.Module):
         kernel_size = 7
         self.compress = ChannelPool()
         self.spatial = BasicConv(2, 1, kernel_size, stride=1, padding=(kernel_size-1) // 2, relu=False)
+        self.avg_pool2d = nn.AdaptiveAvgPool2d(1)  # added by me
 
     def forward(self, x):   # x shape is NxCxHxW
         x_compress = self.compress(x)   # Shape: Nx2xHxW
         x_out = self.spatial(x_compress)    # Shape: Nx1xHxW
         # scale = F.sigmoid(x_out)  # broadcasting  # why is it named "broadcasting"? It's not unsqueezing the tensor!
         scale = torch.sigmoid(x_out).expand_as(x)  # Edited by me to make scale and x of the same size
-        return x * scale, torch.sigmoid(x_out)  # Shape: NxCxHxW
+
+        ### added by me
+        feat_dim = x.shape[1]
+        masked_ch_features = self.avg_pool2d(x).view(-1, feat_dim)
+        masked_sp_features = x * scale
+        # attn_mask = torch.sigmoid(x_out)  # this is the one I was using for diversity until now
+        return masked_sp_features, torch.nn.tanh(masked_sp_features), torch.nn.tanh(masked_ch_features)  # Shape: NxCxHxW
 
 
 # If pool_types = ['avg'], no_spatial=True, then it is SE method
@@ -111,5 +118,5 @@ class CBAM(nn.Module):
     def forward(self, x):
         x_out = self.ChannelGate(x)
         if not self.no_spatial:
-            x_out, attn_mat = self.SpatialGate(x_out)
-        return x_out, attn_mat  # Shape: NxCxHxW
+            x_out, attn_sp, attn_ch = self.SpatialGate(x_out)
+        return x_out, attn_sp, attn_ch  # Shape: NxCxHxW

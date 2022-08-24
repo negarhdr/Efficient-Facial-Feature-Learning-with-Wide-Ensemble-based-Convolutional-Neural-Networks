@@ -56,16 +56,16 @@ class Base(nn.Module):
     def forward(self, x):
         # Convolutional, batch-normalization and pooling layers for representation learning
         x_shared_representations = F.relu(self.bn1(self.conv1(x)))
-        x_shared_representations, _ = self.cbam1(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam1(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn2(self.conv2(x_shared_representations))))
-        x_shared_representations, _ = self.cbam2(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam2(x_shared_representations)
 
         x_shared_representations = F.relu(self.bn3(self.conv3(x_shared_representations)))
-        x_shared_representations, _ = self.cbam3(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam3(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn4(self.conv4(x_shared_representations))))
-        x_shared_representations, _ = self.cbam4(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam4(x_shared_representations)
 
         return x_shared_representations
 
@@ -114,16 +114,16 @@ class ConvolutionalBranch(nn.Module):
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
         x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        x_conv_branch, _ = self.cbam1(x_conv_branch)
+        x_conv_branch, _, _ = self.cbam1(x_conv_branch)
 
         x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
-        x_conv_branch, _ = self.cbam2(x_conv_branch)
+        x_conv_branch, _, _ = self.cbam2(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
-        x_conv_branch, _ = self.cbam3(x_conv_branch)
+        x_conv_branch, _, _ = self.cbam3(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
-        x_conv_branch, attn_mat = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
+        x_conv_branch, attn_sp, attn_ch = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
 
         # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
 
@@ -141,7 +141,7 @@ class ConvolutionalBranch(nn.Module):
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_mat
+        return discrete_emotion, continuous_affect, attn_sp, attn_ch
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -159,13 +159,13 @@ class ConvolutionalBranch(nn.Module):
 
         # Convolutional, batch-normalization and pooling layers
         x_to_last_conv_layer = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        x_to_last_conv_layer, _ = self.cbam1(x_to_last_conv_layer)
+        x_to_last_conv_layer, _, _ = self.cbam1(x_to_last_conv_layer)
         x_to_last_conv_layer = self.pool(F.relu(self.bn2(self.conv2(x_to_last_conv_layer))))
-        x_to_last_conv_layer, _ = self.cbam2(x_to_last_conv_layer)
+        x_to_last_conv_layer, _, _ = self.cbam2(x_to_last_conv_layer)
         x_to_last_conv_layer = F.relu(self.bn3(self.conv3(x_to_last_conv_layer)))
-        x_to_last_conv_layer, _ = self.cbam3(x_to_last_conv_layer)
+        x_to_last_conv_layer, _, _ = self.cbam3(x_to_last_conv_layer)
         x_to_last_conv_layer = F.relu(self.bn4(self.conv4(x_to_last_conv_layer)))
-        x_to_last_conv_layer, _ = self.cbam4(x_to_last_conv_layer)
+        x_to_last_conv_layer, _, _ = self.cbam4(x_to_last_conv_layer)
 
         # Feature maps of the last convolutional layer
         return x_to_last_conv_layer
@@ -298,19 +298,22 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         affect_values = []
-        heads = []
+        heads_sp = []
+        heads_ch = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(x_shared_representations)
+            output_emotion, output_affect, attn_sp, attn_ch = branch(x_shared_representations)
             emotions.append(output_emotion)
             affect_values.append(output_affect)
-            heads.append(attn_mat[:, 0, :, :])
-        attn_heads = torch.stack(heads) #.permute([1, 0, 2])
+            heads_sp.append(attn_sp[:, 0, :, :])
+            heads_ch.append(attn_ch)
+        attn_heads_sp = torch.stack(heads_sp) #.permute([1, 0, 2])
+        attn_heads_ch = torch.stack(heads_ch)
         # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
 
-        return emotions, affect_values, attn_heads
+        return emotions, affect_values, attn_heads_sp, attn_heads_ch
 
