@@ -45,7 +45,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
         outputs_eval, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]   # a list of #n torch tensors #n denotes the number of branches
 
-        for i in range(outputs_eval):
+        for i in range(len(outputs_eval)):
             global_outputs_eval.append(outputs_eval[i][0])
 
         # Ensemble prediction
