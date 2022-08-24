@@ -31,8 +31,7 @@ import argparse
 
 # Modules
 from model.utils import udata, umath
-from model.ml.esr_9_cbam import ESR
-# from model.ml.esr_9_cbam_extend import ESR
+from model.ml.esr_9_cbam_divide_conq import ESR
 
 
 def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_process="cpu", current_branch_on_training_val=0):
