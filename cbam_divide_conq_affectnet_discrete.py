@@ -252,6 +252,8 @@ def main(args):
                 # Compute loss
                 loss_local = []
                 loss_global = 0.0
+                div_sp = 0.0
+
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
