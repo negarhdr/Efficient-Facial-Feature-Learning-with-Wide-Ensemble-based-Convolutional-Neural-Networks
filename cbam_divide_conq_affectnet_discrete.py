@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -208,7 +208,7 @@ def main(args):
                                           is_norm_by_mean_std=False,
                                           base_path_to_affectnet=args.base_path_to_dataset)
 
-    val_loader = DataLoader(val_data, batch_size=256, shuffle=False, num_workers=8)
+    val_loader = DataLoader(val_data, batch_size=128, shuffle=False, num_workers=8)
 
     # Train ESR-9
     for branch_on_training in range(args.num_branches_trained_network):
@@ -234,7 +234,7 @@ def main(args):
 
         # Training branch
         for epoch in range(max_training_epoch):
-            train_loader = DataLoader(train_data, batch_size=256, shuffle=True, num_workers=8)
+            train_loader = DataLoader(train_data, batch_size=128, shuffle=True, num_workers=8)
 
             running_loss = 0.0
             running_corrects = [0.0 for _ in range(net.get_ensemble_size())]
