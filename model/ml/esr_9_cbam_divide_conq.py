@@ -137,7 +137,7 @@ class ConvolutionalBranch(nn.Module):
         emotions = []
 
         global_fc_weight = self.local_fc[0].weight
-        global_fc_bias = self.local_fc[0].bias
+        global_fc_bias = self.local_fc[0].bias.to('cuda')
         for i in range(1, 8):
             global_fc_weight = torch.cat((global_fc_weight.to('cuda'), self.local_fc[i].weight.to('cuda')), 1).to('cuda')  # 8x512
             # global_fc_bias += self.local_fc[i].bias.to('cuda')  # 8
