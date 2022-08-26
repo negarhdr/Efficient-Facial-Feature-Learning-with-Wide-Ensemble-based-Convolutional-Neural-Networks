@@ -111,7 +111,8 @@ class ConvolutionalBranch(nn.Module):
         self.fc6 = nn.Linear(64, 8)
         self.fc7 = nn.Linear(64, 8)
         self.fc8 = nn.Linear(64, 8)
-        print('weights shape', self.fc.weight)
+        a = self.fc.weight
+        print('weights shape', a.shape)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
