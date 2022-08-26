@@ -145,7 +145,7 @@ class ConvolutionalBranch(nn.Module):
         emotions = [out, out1, out2, out3, out4, out5, out6, out7, out8]
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return emotions, attn_sp
+        return emotions, attn_sp  # x_conv_branch
 
 
 '''class Classifier(nn.Module):
@@ -295,6 +295,7 @@ class ESR(nn.Module):
         # List of emotions and affect values from the ensemble
         emotions = []
         heads_sp = []
+        local_feat = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
@@ -302,6 +303,7 @@ class ESR(nn.Module):
         for branch in self.convolutional_branches:
             classified_outs, attn_sp = branch(x_shared_representations)
             emotions.append(classified_outs)
+            # local_feat.append()
             heads_sp.append(attn_sp[:, 0, :, :])
         attn_heads_sp = torch.stack(heads_sp)
         return emotions, attn_heads_sp

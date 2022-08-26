@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -269,20 +269,21 @@ def main(args):
                         else:
                             loss_local[i] += criterion(emotions_local, lbls_local)
 
-                if net.get_ensemble_size() > 1:
+                '''if net.get_ensemble_size() > 1:
                     div_sp = diversity(attn_sp, type='spatial').det_div
                     # loss += div_sp
                     # div_ch = diversity(attn_sp, type='channel').det_div
-                    # loss += div_ch
+                    # loss += div_ch'''
 
                 # Backward
                 if epoch % 10 == 0:
-                    loss_global += div_sp
+                    # loss_global += div_sp
                     loss_global.backward(retain_graph=True)
                 else:
-                    for i in range(8):
+                    sum(loss_local[i]).backward()
+                    '''for i in range(8):
                         loss_local[i] += div_sp
-                        loss_local[i].backward(retain_graph=True)
+                        loss_local[i].backward(retain_graph=True)'''
 
                 # Optimize
                 optimizer.step()
@@ -371,8 +372,8 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/Divide&Conq")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_1_bb_sp_detdiv_divide&conq_sgd")
+    parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/Divide_Conq")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_1_bb_divide_conq_sgd_CE")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=1)
     parser.add_argument("--validation_interval", default=10)
