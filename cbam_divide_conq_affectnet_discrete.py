@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -270,6 +270,8 @@ def main(args):
                         else:
                             loss_local[i] += criterion(emotions_local, lbls_local)
 
+                # loss_global += sum(loss_local)
+
                 '''if net.get_ensemble_size() > 1:
                     div_sp = diversity(attn_sp, type='spatial').det_div
                     # loss += div_sp
@@ -285,6 +287,8 @@ def main(args):
                         loss_local[i] += div_sp
                         loss_local[i].backward(retain_graph=True)'''
 
+                print('loss_local', loss_local)
+                print('loss_global', loss_global)
                 loss += loss_global + sum(loss_local)
                 loss.backward()
 
