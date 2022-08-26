@@ -14,6 +14,7 @@ from os import path, makedirs
 import copy
 # External modules
 from .cbam import CBAM
+from torch.autograd import Variable
 
 
 class Base(nn.Module):
@@ -111,8 +112,12 @@ class ConvolutionalBranch(nn.Module):
         self.fc6 = nn.Linear(64, 8)
         self.fc7 = nn.Linear(64, 8)
         self.fc8 = nn.Linear(64, 8)
-        a = self.fc.weight
-        print('weights shape', a.shape)
+
+        dtype = torch.FloatTensor
+        self.fc_weight = torch.cat((self.fc1.weight, self.fc2.weight, self.fc3.weight, self.fc4.weight, self.fc5.weight,
+                                    self.fc6.weight, self.fc7.weight, self.fc8.weight), 1)
+        self.fcc = Variable(self.fc_weight.type(dtype), requires_grad=True)
+        print('weights shape', self.fcc.shape)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
