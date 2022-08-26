@@ -140,11 +140,8 @@ class ConvolutionalBranch(nn.Module):
         global_fc_bias = self.local_fc[0].bias
         for i in range(1, 8):
             global_fc_weight = torch.cat((global_fc_weight.to('cuda'), self.local_fc[i].weight.to('cuda')), 1).to('cuda')  # 8x512
-            global_fc_bias += self.local_fc[i].bias.to('cuda')  # 8
+            # global_fc_bias += self.local_fc[i].bias.to('cuda')  # 8
 
-        print('global_fc_weight', global_fc_weight.shape)
-        print('global_fc_bias', global_fc_bias.shape)
-        print('x_conv_branch', x_conv_branch.shape)
         out_global = torch.mm(x_conv_branch.to('cuda'), torch.transpose(global_fc_weight, 0, 1)) + global_fc_bias
         emotions.append(out_global)
 
