@@ -381,9 +381,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/DDALoss")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_15_bb_ddaloss")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_30_bb_ddaloss")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
-    parser.add_argument("--num_branches_trained_network", default=15)
+    parser.add_argument("--num_branches_trained_network", default=30)
     parser.add_argument("--validation_interval", default=1)
     parser.add_argument("--max_training_epoch", default=50)
     parser.add_argument("--max_finetune_epoch", default=20)
