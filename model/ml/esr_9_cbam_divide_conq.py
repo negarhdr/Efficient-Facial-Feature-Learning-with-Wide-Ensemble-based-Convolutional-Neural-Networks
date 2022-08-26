@@ -111,6 +111,7 @@ class ConvolutionalBranch(nn.Module):
         self.fc6 = nn.Linear(64, 8)
         self.fc7 = nn.Linear(64, 8)
         self.fc8 = nn.Linear(64, 8)
+        print('weights shape', self.fc.weight)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
@@ -142,6 +143,8 @@ class ConvolutionalBranch(nn.Module):
         out6 = self.fc6(x_conv_branch[:, 320:384])
         out7 = self.fc7(x_conv_branch[:, 384:448])
         out8 = self.fc8(x_conv_branch[:, 448:512])
+
+        # fc_weights = torch.cat(())
         emotions = [out, out1, out2, out3, out4, out5, out6, out7, out8]
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
