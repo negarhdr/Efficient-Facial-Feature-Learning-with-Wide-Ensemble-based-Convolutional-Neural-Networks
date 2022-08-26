@@ -270,8 +270,6 @@ def main(args):
                         else:
                             loss_local[i] += criterion(emotions_local, lbls_local)
 
-                # loss_global += sum(loss_local)
-
                 '''if net.get_ensemble_size() > 1:
                     div_sp = diversity(attn_sp, type='spatial').det_div
                     # loss += div_sp
@@ -287,9 +285,10 @@ def main(args):
                         loss_local[i] += div_sp
                         loss_local[i].backward(retain_graph=True)'''
 
-                print('loss_local', sum(loss_local))
-                print('loss_global', loss_global)
-                loss += loss_global + sum(loss_local)
+                # print('loss_local', sum(loss_local))
+                # print('loss_global', loss_global)
+                alpha = 10
+                loss += loss_global + alpha*sum(loss_local)
                 loss.backward()
 
                 # Optimize
@@ -383,7 +382,7 @@ if __name__ == "__main__":
     parser.add_argument("--name_experiment", default="CBAM_ESR_1_bb_divide_conq_sgd_CE")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=1)
-    parser.add_argument("--validation_interval", default=10)
+    parser.add_argument("--validation_interval", default=1)
     parser.add_argument("--max_training_epoch", default=50)
     parser.add_argument("--max_finetune_epoch", default=20)
     parser.add_argument("--freeze_trained_branches", default=False)
