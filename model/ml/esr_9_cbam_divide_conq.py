@@ -148,7 +148,7 @@ class ConvolutionalBranch(nn.Module):
         for i in range(8):
             l = i*64
             u = (i+1)*64
-            emotions.append(self.local_fc[i](x_conv_branch[:, l:u]))
+            emotions.append(self.local_fc[i](x_conv_branch[:, l:u].to('cpu')))
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
         return emotions, attn_sp  # x_conv_branch
