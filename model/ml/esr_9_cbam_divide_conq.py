@@ -107,11 +107,9 @@ class ConvolutionalBranch(nn.Module):
         for i in range(8):
             self.local_fc.append(nn.Linear(64, 8))
 
-        '''dtype = torch.FloatTensor
-        self.fc_weight = torch.cat((self.fc1.weight, self.fc2.weight, self.fc3.weight, self.fc4.weight, self.fc5.weight,
-                                    self.fc6.weight, self.fc7.weight, self.fc8.weight), 1)
-        self.fcc = Variable(self.fc_weight.type(dtype), requires_grad=True)
-        print('weights shape', self.fcc.shape)'''
+        dtype = torch.FloatTensor
+        self.fc_weight = Variable(torch.randn(512, 8).type(dtype), requires_grad=True)
+        self.fc_bias = Variable(torch.randn(8).type(dtype), requires_grad=True)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
@@ -135,20 +133,14 @@ class ConvolutionalBranch(nn.Module):
 
         # emotion classification
         emotions = []
-
-        global_fc_weight = self.local_fc[0].weight
-        global_fc_bias = self.local_fc[0].bias.to('cuda')
-        for i in range(1, 8):
-            global_fc_weight = torch.cat((global_fc_weight.to('cuda'), self.local_fc[i].weight.to('cuda')), 1).to('cuda')  # 8x512
-            # global_fc_bias += self.local_fc[i].bias.to('cuda')  # 8
-
-        out_global = torch.mm(x_conv_branch.to('cuda'), torch.transpose(global_fc_weight, 0, 1)) + global_fc_bias
-        emotions.append(out_global)
+        out_global = torch.mm(x_conv_branch, self.fc_weight) + self.fc_bias
+        emotions.appendd(out_global)
 
         for i in range(8):
-            l = i*64
-            u = (i+1)*64
-            emotions.append(self.local_fc[i](x_conv_branch[:, l:u].to('cpu')))
+            l = i * 64
+            u = (i + 1) * 64
+            out_local = torch.mm(x_conv_branch[:, l:u], self.fc_weight[l:u, :]) + self.fc_bias
+            emotions.append(out_local)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
         return emotions, attn_sp  # x_conv_branch
