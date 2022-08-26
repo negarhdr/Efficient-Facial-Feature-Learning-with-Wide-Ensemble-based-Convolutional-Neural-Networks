@@ -133,9 +133,10 @@ class ConvolutionalBranch(nn.Module):
 
         # emotion classification
         emotions = []
+        print('x_conv_branch', x_conv_branch.is_cuda)
+        print('self.fc_weight', self.fc_weight.is_cuda)
         out_global = torch.mm(x_conv_branch, self.fc_weight) + self.fc_bias
         emotions.appendd(out_global)
-
         for i in range(8):
             l = i * 64
             u = (i + 1) * 64
