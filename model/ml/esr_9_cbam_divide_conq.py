@@ -102,14 +102,9 @@ class ConvolutionalBranch(nn.Module):
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-        # classifiers
-        self.local_fc = []
-        for i in range(8):
-            self.local_fc.append(nn.Linear(64, 8))
-
         dtype = torch.FloatTensor
-        self.fc_weight = Variable(torch.randn(512, 8).type(dtype), requires_grad=True)
-        self.fc_bias = Variable(torch.randn(8).type(dtype), requires_grad=True)
+        self.fc_weight = Variable(torch.randn(512, 8).type(dtype), requires_grad=True).to('cuda')
+        self.fc_bias = Variable(torch.randn(8).type(dtype), requires_grad=True).to('cuda')
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
