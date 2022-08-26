@@ -56,16 +56,16 @@ class Base(nn.Module):
     def forward(self, x):
         # Convolutional, batch-normalization and pooling layers for representation learning
         x_shared_representations = F.relu(self.bn1(self.conv1(x)))
-        x_shared_representations, _ = self.cbam1(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam1(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn2(self.conv2(x_shared_representations))))
-        x_shared_representations, _ = self.cbam2(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam2(x_shared_representations)
 
         x_shared_representations = F.relu(self.bn3(self.conv3(x_shared_representations)))
-        x_shared_representations, _ = self.cbam3(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam3(x_shared_representations)
 
         x_shared_representations = self.pool(F.relu(self.bn4(self.conv4(x_shared_representations))))
-        x_shared_representations, _ = self.cbam4(x_shared_representations)
+        x_shared_representations, _, _ = self.cbam4(x_shared_representations)
 
         return x_shared_representations
 
@@ -101,53 +101,30 @@ class ConvolutionalBranch(nn.Module):
 
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc = nn.Linear(512, 8)
-
-        # centers
-        # self.centers = nn.Linear(8, 512)
-
-        # Last, fully-connected layer related to continuous affect levels (arousal and valence)
-        # self.fc_dimensional = nn.Linear(8, 2)
-
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
-
         # Global average pooling layer
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
         x_conv_branch = F.relu(self.bn1(self.conv1(x_shared_representations)))
-        x_conv_branch, _ = self.cbam1(x_conv_branch)
+        x_conv_branch, _, _ = self.cbam1(x_conv_branch)
 
         x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
-        x_conv_branch, _ = self.cbam2(x_conv_branch)
+        x_conv_branch, _, _ = self.cbam2(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
-        x_conv_branch, _ = self.cbam3(x_conv_branch)
+        x_conv_branch, _, _ = self.cbam3(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
-        x_conv_branch, attn_mat = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
-
-        # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
-
-        # Prepare features for Classification & Regression
-        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
-        x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
+        x_conv_branch, attn_mat, _ = self.cbam4(x_conv_branch)  # attn_mat 32x1x6x6, x_conv_branch 32x512x6x6
 
         # Fully connected layer for expression recognition
+        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
+        x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
         discrete_emotion = self.fc(x_conv_branch)
 
-        # Application of the ReLU function to neurons related to discrete emotion labels
-        # x_conv_branch = F.relu(discrete_emotion)
-        # continuous_affect = self.fc_dimensional(x_conv_branch)
-
-        '''# distance to center
-        # center_weights = self.centers(x_conv_branch)
-        center_weights = self.centers.weight
-        x_conv_branch = (x_conv_branch.unsqueeze(1) - center_weights.unsqueeze(0)).pow(2)  # NxCxD (check dims)
-        dist_center = -1 * (x_conv_branch.sum(2))  # NxC (check)'''
-
-        # Returns activations of the discrete emotion output layer and arousal and valence levels
         return discrete_emotion, x_conv_branch, attn_mat
 
     '''def forward_to_last_conv_layer(self, x_shared_representations):
@@ -231,10 +208,6 @@ class ESR(nn.Module):
         self.base = Base()
         self.device = device
         self.base.to(self.device)
-
-        # Class centers
-        # self.centers = nn.Parameter(torch.FloatTensor(512, 8))
-        # nn.init.kaiming_normal_(self.centers.data.t())  # might not be needed
 
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
         self.convolutional_branches = []

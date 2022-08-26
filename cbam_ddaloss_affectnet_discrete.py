@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -146,23 +146,41 @@ class BranchDiversity(nn.Module):
         self.det_div = 0
         self.logdet_div = 0
 
-    def forward(self, x):  # num_branch x batch_size x 6 x 6
+    def forward(self, x, type='spatial'):
+
         num_branches = x.size(0)
         gamma = 10
         snm = torch.zeros((num_branches, num_branches))
 
-        # diversity between spatial attention heads
-        for i in range(num_branches):
-            for j in range(num_branches):
-                if i != j:
-                    diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
-                    diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
-                    snm[i, j] = diff
-        self.direct_div = torch.sum(snm)
-        self.det_div = -1 * torch.det(snm)
-        self.logdet_div = -1 * torch.logdet(snm)
+        ############# Spatial attn diversity #############
+        if type == 'spatial': # num_branch x batch_size x 6 x 6
+            # diversity between spatial attention heads
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    if i != j:
+                        diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] = diff
+            self.direct_div = torch.sum(snm)
+            self.det_div = -1 * torch.det(snm)
+            self.logdet_div = -1 * torch.logdet(snm)
+
+        ############# Channel attn diversity #############
+        elif type == 'channel': # num_branch x batch_size x 512
+            # diversity between channels of attention heads
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    if i != j:
+                        diff = torch.exp(
+                            -1 * gamma * torch.sum(torch.square(x[i, :, :] - x[j, :, :]), 1))  # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] = diff
+            self.direct_div = torch.sum(snm)
+            self.det_div = -1 * torch.det(snm)
+            self.logdet_div = -1 * torch.logdet(snm)
 
         return self
+
 
 '''class CenterLoss(nn.Module):
     def __init__(self, ):
@@ -285,7 +303,7 @@ def main(args):
                     loss += criterion_dda(x_conv[i_4], labels)
 
                 # branch_Div
-                # loss += criterion_div(attn_heads).det_div
+                loss += criterion_div(attn_heads, type='spatial').det_div
 
                 # Backward
                 loss.backward(retain_graph=True)
@@ -381,9 +399,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/DDALoss")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_30_bb_ddaloss")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_15_bb_ddaloss_detdiv_sp_mask")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
-    parser.add_argument("--num_branches_trained_network", default=30)
+    parser.add_argument("--num_branches_trained_network", default=15)
     parser.add_argument("--validation_interval", default=1)
     parser.add_argument("--max_training_epoch", default=50)
     parser.add_argument("--max_finetune_epoch", default=20)
