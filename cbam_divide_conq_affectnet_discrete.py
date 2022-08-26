@@ -255,6 +255,7 @@ def main(args):
                 loss_local = []
                 loss_global = 0.0
                 div_sp = 0.0
+                loss = 0.0
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
@@ -276,14 +277,16 @@ def main(args):
                     # loss += div_ch'''
 
                 # Backward
-                if epoch % 10 == 0:
+                '''if epoch % 10 == 0:
                     # loss_global += div_sp
                     loss_global.backward(retain_graph=True)
                 else:
-                    sum(loss_local).backward()
-                    '''for i in range(8):
+                    for i in range(8):
                         loss_local[i] += div_sp
                         loss_local[i].backward(retain_graph=True)'''
+
+                loss += loss_global + sum(loss_local)
+                loss.backward()
 
                 # Optimize
                 optimizer.step()
