@@ -103,21 +103,15 @@ class ConvolutionalBranch(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
         # classifiers
-        self.fc = nn.Linear(512, 8)
-        self.fc1 = nn.Linear(64, 8)
-        self.fc2 = nn.Linear(64, 8)
-        self.fc3 = nn.Linear(64, 8)
-        self.fc4 = nn.Linear(64, 8)
-        self.fc5 = nn.Linear(64, 8)
-        self.fc6 = nn.Linear(64, 8)
-        self.fc7 = nn.Linear(64, 8)
-        self.fc8 = nn.Linear(64, 8)
+        self.local_fc = []
+        for i in range(8):
+            self.local_fc.append(nn.Linear(64, 8))
 
-        dtype = torch.FloatTensor
+        '''dtype = torch.FloatTensor
         self.fc_weight = torch.cat((self.fc1.weight, self.fc2.weight, self.fc3.weight, self.fc4.weight, self.fc5.weight,
                                     self.fc6.weight, self.fc7.weight, self.fc8.weight), 1)
         self.fcc = Variable(self.fc_weight.type(dtype), requires_grad=True)
-        print('weights shape', self.fcc.shape)
+        print('weights shape', self.fcc.shape)'''
 
     def forward(self, x_shared_representations):
         # Convolutional, batch-normalization and pooling layers
@@ -140,18 +134,21 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
 
         # emotion classification
-        out = self.fc(x_conv_branch)
-        out1 = self.fc1(x_conv_branch[:, 0:64])
-        out2 = self.fc2(x_conv_branch[:, 64:128])
-        out3 = self.fc3(x_conv_branch[:, 128:192])
-        out4 = self.fc4(x_conv_branch[:, 192:256])
-        out5 = self.fc5(x_conv_branch[:, 256:320])
-        out6 = self.fc6(x_conv_branch[:, 320:384])
-        out7 = self.fc7(x_conv_branch[:, 384:448])
-        out8 = self.fc8(x_conv_branch[:, 448:512])
+        emotions = []
 
-        # fc_weights = torch.cat(())
-        emotions = [out, out1, out2, out3, out4, out5, out6, out7, out8]
+        global_fc_weight = self.local_fc[0].weight
+        global_fc_bias = self.local_fc[0].bias
+        for i in range(1, 8):
+            global_fc_weight = torch.cat((global_fc_weight, self.local_fc[i].weight), 1)  # 8x512
+            global_fc_bias = torch.cat((global_fc_bias, self.local_fc[i].bias))  # 512
+
+        out_global = torch.mm(x_conv_branch, torch.transpose(global_fc_weight, 0, 1)) + global_fc_bias
+        emotions.append(out_global)
+
+        for i in range(8):
+            l = i*64
+            u = (i+1)*64
+            emotions.append(self.local_fc[i](x_conv_branch[:, l:u]))
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
         return emotions, attn_sp  # x_conv_branch
