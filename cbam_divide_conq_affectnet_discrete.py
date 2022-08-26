@@ -287,7 +287,7 @@ def main(args):
                         loss_local[i] += div_sp
                         loss_local[i].backward(retain_graph=True)'''
 
-                print('loss_local', loss_local)
+                print('loss_local', sum(loss_local))
                 print('loss_global', loss_global)
                 loss += loss_global + sum(loss_local)
                 loss.backward()
