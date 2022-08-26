@@ -288,7 +288,7 @@ def main(args):
                 # print('loss_local', sum(loss_local))
                 # print('loss_global', loss_global)
                 alpha = 10
-                loss += loss_global + alpha*sum(loss_local)
+                loss += 0*loss_global + alpha*sum(loss_local)
                 loss.backward()
 
                 # Optimize
