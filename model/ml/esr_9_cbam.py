@@ -134,14 +134,14 @@ class ConvolutionalBranch(nn.Module):
         # Fully connected layer for expression recognition
         discrete_emotion = self.fc(x_conv_branch)
 
-        # Application of the ReLU function to neurons related to discrete emotion labels
+        '''# Application of the ReLU function to neurons related to discrete emotion labels
         x_conv_branch = F.relu(discrete_emotion)
 
         # Fully connected layer for affect perception
         continuous_affect = self.fc_dimensional(x_conv_branch)
 
-        # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_sp, attn_ch
+        # Returns activations of the discrete emotion output layer and arousal and valence levels'''
+        return discrete_emotion, x_conv_branch, attn_sp, attn_ch
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -297,23 +297,23 @@ class ESR(nn.Module):
 
         # List of emotions and affect values from the ensemble
         emotions = []
-        affect_values = []
         heads_sp = []
         heads_ch = []
+        x_conv = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_sp, attn_ch = branch(x_shared_representations)
+            output_emotion, conv_feat, attn_sp, attn_ch = branch(x_shared_representations)
             emotions.append(output_emotion)
-            affect_values.append(output_affect)
+            x_conv.append(conv_feat)
             heads_sp.append(attn_sp[:, 0, :, :])
             heads_ch.append(attn_ch)
         attn_heads_sp = torch.stack(heads_sp) #.permute([1, 0, 2])
         attn_heads_ch = torch.stack(heads_ch)
         # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
 
-        return emotions, affect_values, attn_heads_sp, attn_heads_ch
+        return emotions, conv_feat, attn_heads_sp, attn_heads_ch
 

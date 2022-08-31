@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -116,6 +116,25 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Branch_{}".format(branch_idx)), np.array(his_acc))
     np.save(path.join(base_path_his, "Loss_Val_Branch_{}".format(branch_idx)), np.array(his_val_loss))
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
+
+
+class DDA_Loss(nn.Module):
+    def __init__(self, device, num_class=8, feat_dim=512, batch_size=32):
+        super(DDA_Loss, self).__init__()
+        self.num_class = num_class
+        self.feat_dim = feat_dim
+        self.batch_size = batch_size
+        self.log_softmax = nn.LogSoftmax(dim=1)
+        self.nllloss = nn.NLLLoss()
+        self.device = device
+        self.centers = nn.Parameter(torch.randn(self.num_class, self.feat_dim).to(device))
+
+    def forward(self, x, labels):
+        x_conv_branch = (x.unsqueeze(1) - self.centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
+        dist_center = -1 * (x_conv_branch.sum(2))
+        scores = self.log_softmax(dist_center)
+        ddaloss = self.nllloss(scores, labels) / self.batch_size / 2.0
+        return ddaloss
 
 
 class BranchDiversity(nn.Module):
@@ -219,13 +238,15 @@ def main(args):
     # Send to running device
     net.to_device(device)
 
+    # Define criterion
+    criterion_ce = nn.CrossEntropyLoss()
+    criterion_dda = DDA_Loss(device)
+    criterion_div = BranchDiversity()
+
     # Set optimizer
     optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.1, 'momentum': 0.9},
-                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9}])
-
-    # Define criterion
-    criterion = nn.CrossEntropyLoss()
-    diversity = BranchDiversity()
+                           {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1, 'momentum': 0.9},
+                           {'params': criterion_dda.parameters(), 'lr': 0.1, 'momentum': 0.9}])
 
     # Load validation set. max_loaded_images_per_label=100000 loads the whole validation set
     val_data = udata.AffectNetCategorical(idx_set=2,
@@ -276,7 +297,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                emotions, affect_values, attn_sp, attn_ch = net(inputs)
+                emotions, x_conv, attn_sp, attn_ch = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
@@ -284,13 +305,14 @@ def main(args):
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(emotions[i_4], labels)
+                    loss += criterion_ce(emotions[i_4], labels)
+                    loss += criterion_dda(x_conv[i_4], labels)
 
                 if net.get_ensemble_size() > 1:
-                    div_sp = diversity(attn_sp, type='spatial').det_div
+                    div_sp = criterion_div(attn_sp, type='spatial').det_div
                     loss += div_sp
-                    '''div_ch = diversity(attn_sp, type='channel').det_div
-                    loss += div_ch'''
+                    div_ch = criterion_div(attn_sp, type='channel').det_div
+                    loss += div_ch
 
                 # Backward
                 loss.backward()
@@ -312,7 +334,7 @@ def main(args):
             # Validation
             if ((epoch % args.validation_interval) == 0) or ((epoch + 1) == max_training_epoch):
                 net.eval()
-                val_loss, val_corrects = evaluate(net, val_loader, criterion, device)
+                val_loss, val_corrects = evaluate(net, val_loader, criterion_ce, device)
                 print('Validation - [Branch {:d}, '
                       'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
                                                                        epoch + 1,
@@ -367,7 +389,8 @@ def main(args):
             # Set optimizer for base and the new branch
             optimizer = optim.SGD([{'params': net.base.parameters(), 'lr': 0.01, 'momentum': 0.9},
                                    {'params': net.convolutional_branches[-1].parameters(), 'lr': 0.1,
-                                    'momentum': 0.9}])
+                                    'momentum': 0.9},
+                                   {'params': criterion_dda.parameters(), 'lr': 0.1, 'momentum': 0.9}])
 
             # Set optimizer for the trained branches
             if not args.freeze_trained_branches:
@@ -384,7 +407,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/Attn")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_15_bb_sp_mask_ce_detdiv")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_15_bb_sp_ch_mask_ce_detdiv_dda")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=15)
     parser.add_argument("--validation_interval", default=1)
