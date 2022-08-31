@@ -130,6 +130,8 @@ class DDA_Loss(nn.Module):
         self.centers = nn.Parameter(torch.randn(self.num_class, self.feat_dim).to(device))
 
     def forward(self, x, labels):
+        print('x.unsqueeze(1)', x.unsqueeze(1).shape)
+        print('self.centers.unsqueeze(0)', self.centers.unsqueeze(0).shape)
         x_conv_branch = (x.unsqueeze(1) - self.centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
         dist_center = -1 * (x_conv_branch.sum(2))
         scores = self.log_softmax(dist_center)
