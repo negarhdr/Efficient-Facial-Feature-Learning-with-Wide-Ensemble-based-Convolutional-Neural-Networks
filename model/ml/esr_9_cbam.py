@@ -315,5 +315,5 @@ class ESR(nn.Module):
         attn_heads_ch = torch.stack(heads_ch)
         # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
 
-        return emotions, conv_feat, attn_heads_sp, attn_heads_ch
+        return emotions, x_conv, attn_heads_sp, attn_heads_ch
 
