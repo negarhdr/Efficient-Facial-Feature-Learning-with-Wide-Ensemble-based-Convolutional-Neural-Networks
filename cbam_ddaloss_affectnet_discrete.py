@@ -119,7 +119,6 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
     np.save(path.join(base_path_his, "Acc_Val_Branch_{}".format(branch_idx)), np.array(his_val_acc))
 
 
-
 class DDA_Loss(nn.Module):
     def __init__(self, device, num_class=8, feat_dim=512, batch_size=32):
         super(DDA_Loss, self).__init__()
@@ -132,6 +131,8 @@ class DDA_Loss(nn.Module):
         self.centers = nn.Parameter(torch.randn(self.num_class, self.feat_dim).to(device))
 
     def forward(self, x, labels):
+        print('x.unsqueeze(1)', x.unsqueeze(1).shape)
+        print('self.centers.unsqueeze(0)', self.centers.unsqueeze(0).shape)
         x_conv_branch = (x.unsqueeze(1) - self.centers.unsqueeze(0)).pow(2)  # NxCxD (check dims)
         dist_center = -1 * (x_conv_branch.sum(2))
         scores = self.log_softmax(dist_center)
