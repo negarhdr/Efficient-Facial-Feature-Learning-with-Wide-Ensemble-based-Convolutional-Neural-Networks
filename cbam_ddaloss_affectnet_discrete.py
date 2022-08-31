@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -300,10 +300,10 @@ def main(args):
                     # CE loss
                     loss += criterion_ce(emotions[i_4], labels)
                     # DDA loss
-                    loss += criterion_dda(x_conv[i_4], labels)
+                    loss += 10*criterion_dda(x_conv[i_4], labels)
 
                 # branch_Div
-                loss += criterion_div(attn_heads, type='spatial').det_div
+                # loss += criterion_div(attn_heads, type='spatial').det_div
 
                 # Backward
                 loss.backward(retain_graph=True)
@@ -399,7 +399,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/DDALoss")
-    parser.add_argument("--name_experiment", default="CBAM_ESR_15_bb_ddaloss_detdiv_masked_feat")
+    parser.add_argument("--name_experiment", default="CBAM_ESR_15_bb_ce_ddalossW10")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet/")
     parser.add_argument("--num_branches_trained_network", default=15)
     parser.add_argument("--validation_interval", default=1)
