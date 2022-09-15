@@ -35,23 +35,26 @@ class Base(nn.Module):
         # Convolutional layers
         self.conv1 = nn.Conv2d(3, 64, 5, 1)
         self.conv2 = nn.Conv2d(64, 64, 3, 1)
-        self.conv3 = nn.Conv2d(64, 128, 3, 1)
-        self.conv4 = nn.Conv2d(128, 128, 3, 1)
+        self.conv3 = nn.Conv2d(64, 64, 3, 1)  #
+        self.conv4 = nn.Conv2d(64, 128, 3, 1)
         self.conv5 = nn.Conv2d(128, 128, 3, 1)
+        self.conv6 = nn.Conv2d(128, 128, 3, 1)
 
         # Batch-normalization layers
         self.bn1 = nn.BatchNorm2d(64)
         self.bn2 = nn.BatchNorm2d(64)
-        self.bn3 = nn.BatchNorm2d(128)
+        self.bn3 = nn.BatchNorm2d(64)  #
         self.bn4 = nn.BatchNorm2d(128)
         self.bn5 = nn.BatchNorm2d(128)
+        self.bn6 = nn.BatchNorm2d(128)
 
         # Attention layers
         self.cbam1 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam2 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam3 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam3 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam5 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam6 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
@@ -94,6 +97,7 @@ class ConvolutionalBranch(nn.Module):
         self.conv3 = nn.Conv2d(256, 256, 3, 1)
         self.conv4 = nn.Conv2d(256, 256, 3, 1)
         self.conv5 = nn.Conv2d(256, 512, 3, 1, 1)
+        self.conv6 = nn.Conv2d(512, 512, 3, 1, 1)
 
         # Batch-normalization layers
         self.bn1 = nn.BatchNorm2d(128)
@@ -101,12 +105,14 @@ class ConvolutionalBranch(nn.Module):
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(256)
         self.bn5 = nn.BatchNorm2d(512)
+        self.bn6 = nn.BatchNorm2d(512)
 
         self.cbam1 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam2 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam3 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam4 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
         self.cbam5 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam6 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
 
         # Second last, fully-connected layer related to discrete emotion labels
         self.fc = nn.Linear(512, 8)
@@ -135,7 +141,7 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch, _ = self.cbam4(x_conv_branch)
 
         x_conv_branch = F.relu(self.bn5(self.conv5(x_conv_branch)))
-        x_conv_branch, attn_mat = self.cbam5(x_conv_branch)  # attn_mat of size 32x1x6x6
+        x_conv_branch, attn_feat_sp, attn_feat_ch = self.cbam5(x_conv_branch)  # attn_mat of size 32x1x6x6
 
         # print('attn_head_size', x_conv_branch.shape)  # Size: 32 x 512 x 6 x 6
 
@@ -146,14 +152,14 @@ class ConvolutionalBranch(nn.Module):
         # Fully connected layer for expression recognition
         discrete_emotion = self.fc(x_conv_branch)
 
-        # Application of the ReLU function to neurons related to discrete emotion labels
+        '''# Application of the ReLU function to neurons related to discrete emotion labels
         x_conv_branch = F.relu(discrete_emotion)
 
         # Fully connected layer for affect perception
-        continuous_affect = self.fc_dimensional(x_conv_branch)
+        continuous_affect = self.fc_dimensional(x_conv_branch)'''
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect, attn_mat
+        return discrete_emotion, x_conv_branch, attn_feat_sp, attn_feat_ch
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
@@ -298,20 +304,22 @@ class ESR(nn.Module):
 
         # List of emotions and affect values from the ensemble
         emotions = []
-        affect_values = []
-        heads = []
+        heads_sp = []
+        heads_ch = []
+        x_conv = []
 
         # Get shared representations
         x_shared_representations = self.base(x)
 
         # Add to the lists of predictions outputs from each convolutional branch in the ensemble
         for branch in self.convolutional_branches:
-            output_emotion, output_affect, attn_mat = branch(x_shared_representations)
+            output_emotion, conv_feat, attn_sp, attn_ch = branch(x_shared_representations)
             emotions.append(output_emotion)
-            affect_values.append(output_affect)
-            heads.append(attn_mat[:, 0, :, :])
-        attn_heads = torch.stack(heads) #.permute([1, 0, 2])
-        # print('attn_shape', attn_heads.shape)  # num_branches x batch_size x H x W
+            x_conv.append(conv_feat)
+            heads_sp.append(attn_sp[:, 0, :, :])
+            heads_ch.append(attn_ch)
+        attn_heads_sp = torch.stack(heads_sp)  # .permute([1, 0, 2])
+        attn_heads_ch = torch.stack(heads_ch)
 
-        return emotions, affect_values, attn_heads
+        return emotions, x_conv, attn_heads_sp, attn_heads_ch
 
