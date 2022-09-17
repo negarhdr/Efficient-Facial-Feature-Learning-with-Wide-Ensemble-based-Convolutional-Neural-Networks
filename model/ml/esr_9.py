@@ -94,7 +94,7 @@ class ConvolutionalBranch(nn.Module):
         self.fc = nn.Linear(512, 8)
 
         # Last, fully-connected layer related to continuous affect levels (arousal and valence)
-        self.fc_dimensional = nn.Linear(8, 2)
+        # self.fc_dimensional = nn.Linear(8, 2)
 
         # Pooling layers
         # Max-pooling layer
@@ -118,10 +118,10 @@ class ConvolutionalBranch(nn.Module):
         x_conv_branch = F.relu(discrete_emotion)
 
         # Fully connected layer for affect perception
-        continuous_affect = self.fc_dimensional(x_conv_branch)
+        # continuous_affect = self.fc_dimensional(x_conv_branch)
 
         # Returns activations of the discrete emotion output layer and arousal and valence levels
-        return discrete_emotion, continuous_affect
+        return discrete_emotion #, continuous_affect
 
     def forward_to_last_conv_layer(self, x_shared_representations):
         """
