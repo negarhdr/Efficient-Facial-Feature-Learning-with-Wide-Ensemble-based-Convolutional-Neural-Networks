@@ -267,7 +267,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/FER_plus/"
-    name_experiment = "ESR_9_div_dda_ESR_9-FER_Plus_3"
+    name_experiment = "ESR_9_div_dda_ESR_9-FER_Plus_4"
     base_path_to_dataset = "../FER_data/FER_plus/Dataset/"
     num_branches_trained_network = 9
     validation_interval = 2
