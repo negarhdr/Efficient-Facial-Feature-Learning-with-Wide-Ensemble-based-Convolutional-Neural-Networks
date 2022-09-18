@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -267,8 +267,8 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/FER_plus/"
-    name_experiment = "Paper_Reproduced_ESR_9-FER_Plus_1"
-    base_path_to_dataset = "../FER_data/FER_plus/Dataset/"
+    name_experiment = "Paper_Reproduced_ESR_9_rafdb_1"
+    base_path_to_dataset = "../FER_data/RAF-DB/basic "
     num_branches_trained_network = 9
     validation_interval = 2
     max_training_epoch = 100
@@ -279,12 +279,16 @@ def main():
         makedirs(path.join(base_path_experiment, name_experiment))
 
     # Define transforms
-    data_transforms = [transforms.ColorJitter(brightness=0.5, contrast=0.5),
-                       transforms.RandomHorizontalFlip(p=0.5),
-                       transforms.RandomAffine(degrees=30,
-                                               translate=(.1, .1),
-                                               scale=(1.0, 1.25),
-                                               resample=Image.BILINEAR)]
+    data_transforms = transforms.Compose([transforms.Resize((96, 96)),
+                                          transforms.RandomHorizontalFlip(),
+                                          transforms.RandomApply([
+                                          transforms.RandomRotation(20),
+                                          transforms.RandomCrop(96, padding=32)], p=0.2),
+                                          transforms.ToTensor(),
+                                          transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                               std=[0.229, 0.224, 0.225]),
+                                          transforms.RandomErasing(scale=(0.02, 0.25)),
+                                          ])
 
 
     # Running device
@@ -310,19 +314,20 @@ def main():
 
     # Load validation set
     # max_loaded_images_per_label=100000 loads the whole validation set
-    val_data = udata.FERplus(idx_set=1,
-                             max_loaded_images_per_label=100000,
-                             transforms=None,
-                             base_path_to_FER_plus=base_path_to_dataset)
+
+    data_transforms_val = transforms.Compose([transforms.Resize((96, 96)),
+                                              transforms.ToTensor(),
+                                              transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                   std=[0.229, 0.224, 0.225])])
+
+    val_data = udata.RafDataSet(base_path_to_dataset, phase='test', transform=data_transforms_val)
+
     val_loader = DataLoader(val_data, batch_size=32, shuffle=False, num_workers=8)
 
     # Fine-tune ESR-9
     for branch_on_training in range(num_branches_trained_network):
         # Load training data
-        train_data = udata.FERplus(idx_set=0,
-                                   max_loaded_images_per_label=5000,
-                                   transforms=transforms.Compose(data_transforms),
-                                   base_path_to_FER_plus=base_path_to_dataset)
+        train_data = udata.RafDataSet(base_path_to_dataset, phase='train', transform=data_transforms)
 
         # Best network
         best_ensemble = net.to_state_dict()
