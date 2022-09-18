@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -267,7 +267,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/FER_plus/"
-    name_experiment = "Paper_div_dda_ESR_9-FER_Plus"
+    name_experiment = "ESR_9_div_dda_ESR_9-FER_Plus_1"
     base_path_to_dataset = "../FER_data/FER_plus/Dataset/"
     num_branches_trained_network = 9
     validation_interval = 2
