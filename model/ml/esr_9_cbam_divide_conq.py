@@ -136,7 +136,6 @@ class ConvolutionalBranch(nn.Module):
             out_local = torch.mm(x_conv_branch[:, l:u], self.fc_weight[l:u, :]) + self.fc_bias
             emotions.append(out_local)
 
-        # Returns activations of the discrete emotion output layer and arousal and valence levels
         return emotions, attn_sp  # x_conv_branch
 
 
