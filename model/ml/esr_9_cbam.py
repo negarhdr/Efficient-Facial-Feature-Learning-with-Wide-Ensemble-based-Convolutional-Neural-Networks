@@ -228,7 +228,7 @@ class ESR(nn.Module):
         # Load 9 convolutional branches that composes ESR-9 as described in the docstring (see mark 2)
         self.convolutional_branches = []
         self.to(device)
-        self.load(device)
+        # self.load(device)
         # Evaluation mode on
         # self.eval()
 
