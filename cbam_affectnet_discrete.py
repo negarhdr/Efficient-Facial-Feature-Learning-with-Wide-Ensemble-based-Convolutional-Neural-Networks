@@ -308,11 +308,11 @@ def main(args):
                     loss += criterion_ce(emotions[i_4], labels)
                     # loss += criterion_dda(x_conv[i_4], labels)
 
-                if net.get_ensemble_size() > 1:
+                '''if net.get_ensemble_size() > 1:
                     div_sp = criterion_div(attn_sp, type='spatial').det_div
                     loss += div_sp
                     # div_ch = criterion_div(attn_sp, type='channel').det_div
-                    # loss += div_ch
+                    # loss += div_ch'''
 
                 # Backward
                 loss.backward()
