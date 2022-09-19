@@ -240,7 +240,7 @@ def main():
     base_path_experiment = "./experiments/AffectNet_Discrete/reproduce_results"
     name_experiment = "Main_ESR_15_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
-    num_branches_trained_network = 15
+    num_branches_trained_network = 9
     validation_interval = 1
     max_training_epoch = 50
 
