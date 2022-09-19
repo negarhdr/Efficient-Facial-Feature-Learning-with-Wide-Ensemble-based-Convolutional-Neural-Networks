@@ -238,9 +238,9 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/AffectNet_Discrete/reproduce_results"
-    name_experiment = "Main_ESR_9_AffectNet_Discrete"
+    name_experiment = "Main_ESR_15_AffectNet_Discrete"
     base_path_to_dataset = "../FER_data/AffectNet/"
-    num_branches_trained_network = 9
+    num_branches_trained_network = 15
     validation_interval = 1
     max_training_epoch = 50
 
