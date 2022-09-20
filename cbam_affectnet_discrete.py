@@ -306,7 +306,7 @@ def main(args):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion_ce(emotions[i_4], labels)
-                    loss += criterion_dda(x_conv[i_4], labels)
+                    # loss += criterion_dda(x_conv[i_4], labels)
 
                 if net.get_ensemble_size() > 1:
                     div_sp = criterion_div(attn_sp, type='spatial').det_div
