@@ -107,7 +107,7 @@ class SpatialGate(nn.Module):
         attn_mask_sp = torch.sigmoid(x_out)  # attention mask which was used previously
         attn_feat_sp = self.tanh(masked_sp_features)  # masked_features
         attn_feat_ch = self.tanh(masked_ch_features)
-        return masked_sp_features, attn_mask_sp, attn_feat_ch  # Shape: NxCxHxW
+        return masked_sp_features, attn_mask_sp, masked_ch_features  # Shape: NxCxHxW
 
 
 # If pool_types = ['avg'], no_spatial=True, then it is SE method
