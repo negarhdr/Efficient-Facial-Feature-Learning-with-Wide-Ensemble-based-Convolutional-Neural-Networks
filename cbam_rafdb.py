@@ -75,7 +75,7 @@ class Branch(nn.Module):
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(512)
 
-        self.fc = nn.Linear(512, 8)
+        self.fc = nn.Linear(512, 7)
 
         self.pool = nn.MaxPool2d(2, 2)
         self.global_pool = nn.AdaptiveAvgPool2d(1)
@@ -154,7 +154,7 @@ class Ensemble(nn.Module):
             loaded_model_branch.bn2 = esr_9.convolutional_branches[i].bn2
             loaded_model_branch.bn3 = esr_9.convolutional_branches[i].bn3
             loaded_model_branch.bn4 = esr_9.convolutional_branches[i].bn4
-            loaded_model_branch.fc = esr_9.convolutional_branches[i].fc
+            # loaded_model_branch.fc = esr_9.convolutional_branches[i].fc
             loaded_model.branches.append(loaded_model_branch)
 
         return loaded_model
