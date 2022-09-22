@@ -311,8 +311,8 @@ def main(args):
                 if net.get_ensemble_size() > 1:
                     div_sp = criterion_div(attn_sp, type='spatial').det_div
                     loss += div_sp
-                    div_ch = criterion_div(attn_sp, type='channel').det_div
-                    loss += div_ch
+                    #div_ch = criterion_div(attn_sp, type='channel').det_div
+                    #loss += div_ch
 
                 # Backward
                 loss.backward()
@@ -407,7 +407,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_path_experiment", default="./experiments/AffectNet_Discrete/FinalResults/")
-    parser.add_argument("--name_experiment", default="ESR_15_CBAM_detdiv_sp_ch_dda_2")
+    parser.add_argument("--name_experiment", default="ESR_15_CBAM_detdiv_sp_dda_2")
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet")
     parser.add_argument("--num_branches_trained_network", default=15)
     parser.add_argument("--validation_interval", default=1)
