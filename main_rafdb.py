@@ -269,7 +269,7 @@ def main():
     base_path_experiment = "./experiments/RAFDB/"
     name_experiment = "Paper_Reproduced_ESR_9_rafdb_3_newtransform"
     base_path_to_dataset = "../FER_data/RAF-DB/basic/"
-    num_branches_trained_network = 2
+    num_branches_trained_network = 9
     validation_interval = 2
     max_training_epoch = 100
     current_branch_on_training = 8
