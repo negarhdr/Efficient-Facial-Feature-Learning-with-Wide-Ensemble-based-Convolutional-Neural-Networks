@@ -267,7 +267,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/RAFDB/"
-    name_experiment = "Paper_Reproduced_ESR_9_rafdb_2"
+    name_experiment = "Paper_Reproduced_ESR_9_rafdb_3_newtransform"
     base_path_to_dataset = "../FER_data/RAF-DB/basic/"
     num_branches_trained_network = 2
     validation_interval = 2
