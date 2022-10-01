@@ -263,7 +263,7 @@ def evaluate(val_model_eval, val_loader_eval, val_criterion_eval, device_to_proc
 
     for inputs_eval, labels_eval in val_loader_eval:
         inputs_eval, labels_eval = inputs_eval.to(device_to_process), labels_eval.to(device_to_process)
-        outputs_eval = val_model_eval(inputs_eval)
+        outputs_eval, _, _, _ = val_model_eval(inputs_eval)
         outputs_eval = outputs_eval[:val_model_eval.get_ensemble_size() - current_branch_on_training_val]
 
         # Ensemble prediction
