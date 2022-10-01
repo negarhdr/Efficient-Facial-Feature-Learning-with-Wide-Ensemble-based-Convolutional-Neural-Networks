@@ -341,7 +341,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/RAFDB/"
-    name_experiment = "ESR15_reproduced"
+    name_experiment = "ESR15_CBAM"
     base_path_to_dataset = "../FER_data/RAF-DB/basic/"
     num_branches_trained_network = 15
     validation_interval = 1
@@ -442,11 +442,11 @@ def main():
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
                     loss += criterion_ce(emotions[i_4], labels)
 
-                if net.get_ensemble_size() > 1:
+                '''if net.get_ensemble_size() > 1:
                     div_sp = criterion_div(attn_sp, type='spatial').det_div
                     loss += div_sp
                     div_ch = criterion_div(attn_sp, type='channel').det_div
-                    loss += div_ch
+                    loss += div_ch'''
 
                 # Backward
                 loss.backward()
