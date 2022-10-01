@@ -38,7 +38,6 @@ from model.ml.esr_9_cbam import ESR
 from model.ml.cbam import CBAM
 
 
-
 class BranchDiversity(nn.Module):
     def __init__(self, ):
         super(BranchDiversity, self).__init__()
