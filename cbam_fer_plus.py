@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -35,6 +35,51 @@ import copy
 # Modules
 from model.utils import udata, umath
 from model.ml.esr_9_cbam import ESR
+from model.ml.cbam import CBAM
+
+
+
+class BranchDiversity(nn.Module):
+    def __init__(self, ):
+        super(BranchDiversity, self).__init__()
+        self.direct_div = 0
+        self.det_div = 0
+        self.logdet_div = 0
+
+    def forward(self, x, type='spatial'):
+
+        num_branches = x.size(0)
+        gamma = 10
+        snm = torch.zeros((num_branches, num_branches))
+
+        ############# Spatial attn diversity #############
+        if type == 'spatial': # num_branch x batch_size x 6 x 6
+            # diversity between spatial attention heads
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    if i != j:
+                        diff = torch.exp(-1 * gamma * torch.sum(torch.square(x[i, :, :, :] - x[j, :, :, :]), (1, 2))) # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] = diff
+            self.direct_div = torch.sum(snm)
+            self.det_div = -1 * torch.det(snm)
+            self.logdet_div = -1 * torch.logdet(snm)
+
+        ############# Channel attn diversity #############
+        elif type == 'channel': # num_branch x batch_size x 512
+            # diversity between channels of attention heads
+            for i in range(num_branches):
+                for j in range(num_branches):
+                    if i != j:
+                        diff = torch.exp(
+                            -1 * gamma * torch.sum(torch.square(x[i, :, :] - x[j, :, :]), 1))  # batch_size
+                        diff = torch.mean(diff)  # (1/num_branches) * torch.sum(diff)  # 1
+                        snm[i, j] = diff
+            self.direct_div = torch.sum(snm)
+            self.det_div = -1 * torch.det(snm)
+            self.logdet_div = -1 * torch.logdet(snm)
+
+        return self
 
 
 class Base(nn.Module):
@@ -75,20 +120,35 @@ class Branch(nn.Module):
         self.bn3 = nn.BatchNorm2d(256)
         self.bn4 = nn.BatchNorm2d(512)
 
+        self.cbam1 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam2 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam3 = CBAM(gate_channels=256, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam4 = CBAM(gate_channels=512, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+
         self.fc = nn.Linear(512, 8)
 
         self.pool = nn.MaxPool2d(2, 2)
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
     def forward(self, x_branch_to_process):
-        x_branch = F.relu(self.bn1(self.conv1(x_branch_to_process)))
-        x_branch = self.pool(F.relu(self.bn2(self.conv2(x_branch))))
-        x_branch = F.relu(self.bn3(self.conv3(x_branch)))
-        x_branch = self.global_pool(F.relu(self.bn4(self.conv4(x_branch))))
-        x_branch = x_branch.view(-1, 512)
-        x_branch = self.fc(x_branch)
+        x_conv_branch = F.relu(self.bn1(self.conv1(x_branch_to_process)))
+        x_conv_branch, _, _ = self.cbam1(x_conv_branch)
 
-        return x_branch
+        x_conv_branch = self.pool(F.relu(self.bn2(self.conv2(x_conv_branch))))
+        x_conv_branch, _, _ = self.cbam2(x_conv_branch)
+
+        x_conv_branch = F.relu(self.bn3(self.conv3(x_conv_branch)))
+        x_conv_branch, _, _ = self.cbam3(x_conv_branch)
+
+        x_conv_branch = F.relu(self.bn4(self.conv4(x_conv_branch)))
+        x_conv_branch, attn_sp, attn_ch = self.cbam4(x_conv_branch)  # attn_mat of size 32x1x6x6
+
+        x_conv_branch = self.global_pool(x_conv_branch)  # N x 512 x 1 x 1
+        x_conv_branch = x_conv_branch.view(-1, 512)  # N x 512
+
+        discrete_emotion = self.fc(x_conv_branch)
+
+        return discrete_emotion, x_conv_branch, attn_sp, attn_ch
 
 
 class Ensemble(nn.Module):
@@ -105,13 +165,23 @@ class Ensemble(nn.Module):
         self.branches.append(Branch())
 
     def forward(self, x):
-        x_ensemble = self.base(x)
+        x_base = self.base(x)
 
-        y = []
+        emotions = []
+        heads_sp = []
+        heads_ch = []
+        x_conv = []
+
         for branch in self.branches:
-            y.append(branch(x_ensemble))
+            output_emotion, conv_feat, attn_sp, attn_ch = branch(x_base)
+            emotions.append(output_emotion)
+            x_conv.append(conv_feat)
+            heads_sp.append(attn_sp[:, 0, :, :])
+            heads_ch.append(attn_ch)
+        attn_heads_sp = torch.stack(heads_sp)  # .permute([1, 0, 2])
+        attn_heads_ch = torch.stack(heads_ch)
 
-        return y
+        return emotions, x_conv, attn_heads_sp, attn_heads_ch
 
     @staticmethod
     def save(state_dicts, base_path_to_save_model, current_branch_save):
@@ -137,6 +207,7 @@ class Ensemble(nn.Module):
     def load(device_to_load, ensemble_size):
         # Load ESR-9
         esr_9 = ESR(device_to_load)
+        esr_9.load(device=device_to_load)
         loaded_model = Ensemble()
         loaded_model.branches = []
 
@@ -154,6 +225,10 @@ class Ensemble(nn.Module):
             loaded_model_branch.bn2 = esr_9.convolutional_branches[i].bn2
             loaded_model_branch.bn3 = esr_9.convolutional_branches[i].bn3
             loaded_model_branch.bn4 = esr_9.convolutional_branches[i].bn4
+            loaded_model_branch.cbam1 = esr_9.convolutional_branches[i].cbam1
+            loaded_model_branch.cbam2 = esr_9.convolutional_branches[i].cbam2
+            loaded_model_branch.cbam3 = esr_9.convolutional_branches[i].cbam3
+            loaded_model_branch.cbam4 = esr_9.convolutional_branches[i].cbam4
             loaded_model_branch.fc = esr_9.convolutional_branches[i].fc
             loaded_model.branches.append(loaded_model_branch)
 
@@ -267,7 +342,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/FER_plus/"
-    name_experiment = "ESR_9_div_dda_ESR_9-FER_Plus_4"
+    name_experiment = "ESR9_CBAM"
     base_path_to_dataset = "../FER_data/FER_plus/Dataset/"
     num_branches_trained_network = 9
     validation_interval = 2
@@ -305,7 +380,8 @@ def main():
         optimizer.add_param_group({"params": net.branches[b].parameters(), "lr": 0.02, "momentum": 0.9})
 
     # Define criterion
-    criterion = nn.CrossEntropyLoss()
+    criterion_ce = nn.CrossEntropyLoss()
+    criterion_div = BranchDiversity()
 
     # Load validation set
     # max_loaded_images_per_label=100000 loads the whole validation set
@@ -354,15 +430,21 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                outputs = net(inputs)
-                confs_preds = [torch.max(o, 1) for o in outputs]
+                emotions, x_conv, attn_sp, attn_ch = net(inputs)
+                confs_preds = [torch.max(o, 1) for o in emotions]
 
                 # Compute loss
                 loss = 0.0
                 for i_4 in range(net.get_ensemble_size() - current_branch_on_training):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
-                    loss += criterion(outputs[i_4], labels)
+                    loss += criterion_ce(emotions[i_4], labels)
+
+                # if net.get_ensemble_size() > 1:
+                    #div_sp = criterion_div(attn_sp, type='spatial').det_div
+                    #loss += div_sp
+                    #div_ch = criterion_div(attn_sp, type='channel').det_div
+                    #loss += div_ch
 
                 # Backward
                 loss.backward()
@@ -385,7 +467,7 @@ def main():
             if ((epoch % validation_interval) == 0) or ((epoch + 1) == max_training_epoch):
                 net.eval()
 
-                val_loss, val_corrects = evaluate(net, val_loader, criterion, device, current_branch_on_training)
+                val_loss, val_corrects = evaluate(net, val_loader, criterion_ce, device, current_branch_on_training)
 
                 print("\nValidation - [Branch {:d}, Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}\n\n".format(
                     net.get_ensemble_size() - current_branch_on_training,

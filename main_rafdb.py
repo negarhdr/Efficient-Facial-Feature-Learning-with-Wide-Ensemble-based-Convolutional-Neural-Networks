@@ -279,7 +279,7 @@ def main():
         makedirs(path.join(base_path_experiment, name_experiment))
 
     # Define transforms
-    '''data_transforms = transforms.Compose([transforms.Resize((96, 96)),
+    data_transforms = transforms.Compose([transforms.Resize((96, 96)),
                                           transforms.RandomHorizontalFlip(),
                                           transforms.RandomApply([
                                           transforms.RandomRotation(20),
@@ -288,10 +288,10 @@ def main():
                                           transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                                std=[0.229, 0.224, 0.225]),
                                           transforms.RandomErasing(scale=(0.02, 0.25)),
-                                          ])'''
+                                          ])
 
     # Define transforms
-    data_transforms = transforms.Compose([transforms.Resize((96, 96)),
+    '''data_transforms = transforms.Compose([transforms.Resize((96, 96)),
                                           transforms.ColorJitter(brightness=0.5, contrast=0.5),
                                           transforms.RandomHorizontalFlip(p=0.5),
                                           transforms.RandomAffine(degrees=30,
@@ -300,7 +300,7 @@ def main():
                                                                   resample=Image.BILINEAR),
                                           transforms.ToTensor(),
                                           transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                               std=[0.229, 0.224, 0.225])])
+                                                               std=[0.229, 0.224, 0.225])])'''
 
     # Running device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
