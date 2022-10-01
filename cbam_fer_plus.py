@@ -341,7 +341,7 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/FER_plus/"
-    name_experiment = "ESR9_CBAM_div_sp"
+    name_experiment = "ESR9_CBAM_div_sp_ch"
     base_path_to_dataset = "../FER_data/FER_plus/Dataset/"
     num_branches_trained_network = 9
     validation_interval = 2
@@ -442,8 +442,8 @@ def main():
                 if net.get_ensemble_size() > 1:
                     div_sp = criterion_div(attn_sp, type='spatial').det_div
                     loss += div_sp
-                    #div_ch = criterion_div(attn_sp, type='channel').det_div
-                    #loss += div_ch
+                    div_ch = criterion_div(attn_sp, type='channel').det_div
+                    loss += div_ch
 
                 # Backward
                 loss.backward()

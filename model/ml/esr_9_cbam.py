@@ -208,7 +208,7 @@ class ESR(nn.Module):
     INPUT_IMAGE_NORMALIZATION_STD = [1.0, 1.0, 1.0]
     # Path to saved network
     # PATH_TO_SAVED_NETWORK = "./model/ml/trained_models/esr_9_cbam"
-    PATH_TO_SAVED_NETWORK = "../ESR_results/discrete/best_saved_models/ESR9_CBAM_div_sp"
+    PATH_TO_SAVED_NETWORK = "../ESR_results/discrete/best_saved_models/ESR9_CBAM_div_sp_ch"
     FILE_NAME_BASE_NETWORK = "Net-Base-Shared_Representations.pt"
     FILE_NAME_CONV_BRANCH = "Net-Branch_{}.pt"
 
