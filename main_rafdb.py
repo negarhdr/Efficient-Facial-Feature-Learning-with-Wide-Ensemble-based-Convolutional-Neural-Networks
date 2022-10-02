@@ -16,7 +16,7 @@ __license__ = "MIT license"
 __version__ = "1.0"
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 # External Libraries
 from torch.utils.data import DataLoader
@@ -267,12 +267,12 @@ def plot(his_loss, his_acc, his_val_loss, his_val_acc, branch_idx, base_path_his
 def main():
     # Experimental variables
     base_path_experiment = "./experiments/RAFDB/"
-    name_experiment = "ESR15_reproduced"
+    name_experiment = "ESR9_reproduced"
     base_path_to_dataset = "../FER_data/RAF-DB/basic/"
-    num_branches_trained_network = 15
+    num_branches_trained_network = 9
     validation_interval = 1
     max_training_epoch = 100
-    current_branch_on_training = 14
+    current_branch_on_training = 8
 
     # Make dir
     if not path.isdir(path.join(base_path_experiment, name_experiment)):
