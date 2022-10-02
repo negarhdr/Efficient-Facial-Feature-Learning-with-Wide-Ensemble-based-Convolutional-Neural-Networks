@@ -246,4 +246,4 @@ class ESR(nn.Module):
         ESR with nine branches trained on AffectNet (Siqueira et al., 2020).
         :return: (int) Size of the ensemble
         """
-        return 15  #it was 9
+        return 9  #it was 9
