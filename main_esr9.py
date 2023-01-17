@@ -13,6 +13,7 @@ Video: recognizes facial expressions in videos in a frame-based approach.
 Webcam: connects to a webcam and recognizes facial expressions of the closest face detected
 by a face detection algorithm.
 """
+
 # display_graph_ensemble was set to (not no_plot) and I changed it to False because there was an error in draw_graph that I couldn't fix
 __author__ = "Henrique Siqueira"
 __email__ = "siqueira.hc@outlook.com"

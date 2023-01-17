@@ -102,25 +102,23 @@ class SpatialGate(nn.Module):
 
         ### added by me
         feat_dim = x.shape[1]
-        masked_ch_features = self.avg_pool2d(x).view(-1, feat_dim)
+        # masked_ch_features = self.avg_pool2d(x).view(-1, feat_dim)
+        masked_ch_features = x
         masked_sp_features = x * scale
         attn_mask_sp = torch.sigmoid(x_out)  # attention mask which was used previously
-        attn_feat_sp = self.tanh(masked_sp_features)  # masked_features
-        attn_feat_ch = self.tanh(masked_ch_features)
+        # attn_feat_sp = self.tanh(masked_sp_features)  # masked_features
+        # attn_feat_ch = self.tanh(masked_ch_features)
         return masked_sp_features, attn_mask_sp, masked_ch_features  # Shape: NxCxHxW
 
 
 # If pool_types = ['avg'], no_spatial=True, then it is SE method
 class CBAM(nn.Module):
-    def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False):
+    def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max']):
         super(CBAM, self).__init__()
         self.ChannelGate = ChannelGate(gate_channels, reduction_ratio, pool_types)
-        self.no_spatial = no_spatial
-        if not no_spatial:
-            self.SpatialGate = SpatialGate()
+        self.SpatialGate = SpatialGate()
 
     def forward(self, x):
         x_out = self.ChannelGate(x)
-        if not self.no_spatial:
-            x_out, attn_sp, attn_ch = self.SpatialGate(x_out)
+        x_out, attn_sp, attn_ch = self.SpatialGate(x_out)
         return x_out, attn_sp, attn_ch  # Shape: NxCxHxW
