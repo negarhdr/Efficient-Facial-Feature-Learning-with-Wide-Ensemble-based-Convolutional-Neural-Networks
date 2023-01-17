@@ -302,7 +302,6 @@ def main(args):
 
                 # Compute loss
                 loss = 0.0
-                div_loss = 0.0
                 for i_4 in range(net.get_ensemble_size()):
                     preds = confs_preds[i_4][1]
                     running_corrects[i_4] += torch.sum(preds == labels).cpu().numpy()
@@ -314,8 +313,6 @@ def main(args):
                     loss += div_sp
                     div_ch = criterion_div(attn_sp, type='channel').det_div
                     loss += div_ch
-                    div_loss += div_ch
-                    div_loss += div_sp
 
                 # Backward
                 loss.backward()
@@ -324,13 +321,12 @@ def main(args):
                 optimizer.step()
 
                 # Save loss
-                # running_loss += loss.item()
-                running_loss += div_loss
+                running_loss += loss.item()
                 running_updates += 1
 
             # Statistics
             print('[Branch {:d}, '
-                  'Epochs {:d}--{:d}] Div_Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
+                  'Epochs {:d}--{:d}] Loss: {:.4f} Acc: {}'.format(net.get_ensemble_size(),
                                                                    epoch + 1,
                                                                    max_training_epoch,
                                                                    running_loss / running_updates,
