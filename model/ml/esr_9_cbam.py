@@ -45,10 +45,10 @@ class Base(nn.Module):
         self.bn4 = nn.BatchNorm2d(128)
 
         # Attention layers
-        self.cbam1 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam2 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam3 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
-        self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False)
+        self.cbam1 = CBAM(gate_channels=64, reduction_ratio=16, pool_types=['avg', 'max'])
+        self.cbam2 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'])
+        self.cbam3 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'])
+        self.cbam4 = CBAM(gate_channels=128, reduction_ratio=16, pool_types=['avg', 'max'])
 
         # Max-pooling layer
         self.pool = nn.MaxPool2d(2, 2)
