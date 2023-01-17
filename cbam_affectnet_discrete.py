@@ -324,7 +324,8 @@ def main(args):
                 optimizer.step()
 
                 # Save loss
-                running_loss += div_loss.item()
+                # running_loss += loss.item()
+                running_loss += div_loss
                 running_updates += 1
 
             # Statistics
