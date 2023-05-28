@@ -297,6 +297,7 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
+                print('network size', net.get_ensemble_size())
                 macs, params = profile(net, inputs=(inputs,))
                 print('macs', macs)
                 print('params', params)
@@ -414,8 +415,8 @@ if __name__ == "__main__":
     parser.add_argument("--base_path_to_dataset", default="../FER_data/AffectNet")
     parser.add_argument("--num_branches_trained_network", default=9)
     parser.add_argument("--validation_interval", default=1)
-    parser.add_argument("--max_training_epoch", default=50)
-    parser.add_argument("--max_finetune_epoch", default=20)
+    parser.add_argument("--max_training_epoch", default=1)
+    parser.add_argument("--max_finetune_epoch", default=1)
     parser.add_argument("--freeze_trained_branches", default=False)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--gpu_indx", default="1")
