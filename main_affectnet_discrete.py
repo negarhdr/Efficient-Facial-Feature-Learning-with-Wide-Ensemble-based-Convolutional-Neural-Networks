@@ -329,7 +329,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
-                macs, params = profile(net, inputs=(input,))
+                macs, params = profile(net, inputs=(inputs,))
                 print('macs', macs)
                 print('params', params)
                 outputs = net(inputs)

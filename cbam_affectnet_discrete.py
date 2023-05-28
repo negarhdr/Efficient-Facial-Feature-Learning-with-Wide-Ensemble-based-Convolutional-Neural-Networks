@@ -28,7 +28,7 @@ import numpy as np
 import torch
 from os import path, makedirs
 import argparse
-
+from thop import profile
 # Modules
 from model.utils import udata, umath
 from model.ml.esr_9_cbam import ESR
@@ -297,6 +297,9 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
+                macs, params = profile(net, inputs=(inputs,))
+                print('macs', macs)
+                print('params', params)
                 emotions, x_conv, attn_sp, attn_ch = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in emotions]
 
