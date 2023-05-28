@@ -30,6 +30,7 @@ import numpy as np
 import torch
 from os import path, makedirs
 import copy
+from thop import profile
 
 # Modules
 from model.utils import udata, umath
@@ -328,6 +329,9 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
+                macs, params = profile(net, inputs=(input,))
+                print('macs', macs)
+                print('params', params)
                 outputs = net(inputs)
                 confs_preds = [torch.max(o, 1) for o in outputs]
 
