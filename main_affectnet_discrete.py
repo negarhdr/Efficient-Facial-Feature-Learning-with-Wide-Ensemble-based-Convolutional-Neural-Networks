@@ -329,6 +329,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Forward
+                print('network size', net.get_ensemble_size())
                 macs, params = profile(net, inputs=(inputs,))
                 print('macs', macs)
                 print('params', params)
